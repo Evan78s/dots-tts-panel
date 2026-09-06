@@ -1,22 +1,12 @@
 #!/usr/bin/env python3
 # 生成 dots.tts 面板 Colab notebook（升级版）
 # 功能：中文界面 + 音色预设 + 参考音频转写(ASR) + 音色库(持久化到 Drive) + 音色相似度
-import json, base64, os
+import json, os
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 # 兼容两种布局：平铺（仓库根）或 dots-tts-panel/ 子目录（本地开发）
 REPO_DIR = BASE if os.path.exists(os.path.join(BASE, "panel_src.py")) else os.path.join(BASE, "dots-tts-panel")
-PRESET_DIR = os.path.join(REPO_DIR, "presets")
 PANEL_SRC = os.path.join(REPO_DIR, "panel_src.py")
-
-# 预设元信息（文件名需与 presets/ 目录一致）
-PRESET_DEFS = [
-    ("婷婷（温柔女声）", "tingting.wav"),
-    ("埃迪（沉稳男声）", "eddy.wav"),
-    ("美佳（甜美女声）", "meijia.wav"),
-    ("桑迪（知性女声）", "sandy.wav"),
-]
-PRESET_TEXT = "大家好，我是你的专属语音助手。今天天气很不错，我们一起聊一聊最近发生的趣事吧。"
 
 
 def md(text):
@@ -28,14 +18,7 @@ def code(text):
             "source": [l + "\n" for l in text.strip("\n").split("\n")]}
 
 
-# ---- 1. 读取预设音频并 base64 ----
-presets = {}
-for label, fname in PRESET_DEFS:
-    with open(os.path.join(PRESET_DIR, fname), "rb") as f:
-        presets[label] = {"file": fname, "b64": base64.b64encode(f.read()).decode(), "text": PRESET_TEXT}
-presets_json = json.dumps(presets, ensure_ascii=False)
-
-# ---- 2. 读取面板脚本 ----
+# ---- 1. 读取面板脚本 ----
 panel_code = open(PANEL_SRC, encoding="utf-8").read()
 
 # ---- 3. 第 1 步 cell 模板 ----
@@ -70,15 +53,11 @@ else:
     subprocess.run("uv pip install --python /content/py311/bin/python faster-whisper 'gradio==4.44.1'", shell=True)
     print("✅ 环境已就绪（含参考音频转写组件）")
 
-# ---- 2. 写内置音色预设数据 ----
-PRESETS_RAW = r"""__PRESETS_JSON__"""
-open("presets.json", "w", encoding="utf-8").write(PRESETS_RAW)
-
-# ---- 3. 写面板脚本 ----
+# ---- 2. 写面板脚本 ----
 panel_code = r"""__PANEL_CODE__"""
 open("panel.py", "w", encoding="utf-8").write(panel_code)
 
-# ---- 4. 启动面板 + 拿公网地址 ----
+# ---- 3. 启动面板 + 拿公网地址 ----
 env = dict(os.environ)
 if CACHE:
     env["HF_HOME"] = CACHE
@@ -104,7 +83,7 @@ else:
     print(open("panel.log").read()[-2000:] if os.path.exists("panel.log") else "无日志")
 '''
 
-STEP1 = STEP1.replace("__PRESETS_JSON__", presets_json).replace("__PANEL_CODE__", panel_code)
+STEP1 = STEP1.replace("__PANEL_CODE__", panel_code)
 
 # ---- 4. 组装 notebook ----
 cells = []
@@ -212,4 +191,4 @@ for out in (out_main, out_root):
 
 print("已生成:", out_main)
 print("已生成:", out_root)
-print("cells:", len(cells), "| 预设数:", len(presets), "| notebook 大小: %.2f KB" % (os.path.getsize(out_main) / 1024))
+print("cells:", len(cells), "| notebook 大小: %.2f KB" % (os.path.getsize(out_main) / 1024))

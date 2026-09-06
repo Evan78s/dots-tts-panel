@@ -1,4 +1,4 @@
-import os, json, base64, shutil, time
+import os, json, shutil, time
 import gradio as gr
 import soundfile as sf
 import torch
@@ -20,22 +20,34 @@ os.makedirs(LIB_DIR, exist_ok=True)
 os.makedirs(PRESET_DIR, exist_ok=True)
 LIB_JSON = os.path.join(LIB_DIR, "voices.json")
 
-# ---------- 内置音色预设（从 presets.json 解码） ----------
+# ---------- 内置音色预设（运行时从 GitHub 仓库下载参考音频，避免内嵌 base64 拖慢代码页） ----------
+PRESET_DEFS = [
+    ("婷婷（温柔女声）", "tingting.wav"),
+    ("埃迪（沉稳男声）", "eddy.wav"),
+    ("美佳（甜美女声）", "meijia.wav"),
+    ("桑迪（知性女声）", "sandy.wav"),
+]
+PRESET_TEXT = "大家好，我是你的专属语音助手。今天天气很不错，我们一起聊一聊最近发生的趣事吧。"
+PRESET_BASE = "https://raw.githubusercontent.com/Evan78s/dots-tts-panel/main/presets"
+
 PRESET_LABELS = {}
-PRESET_TEXT = {}
-try:
-    _pd = json.load(open("/content/presets.json", encoding="utf-8"))
-    for _label, _info in _pd.items():
-        _key = os.path.splitext(_info["file"])[0]
-        _path = os.path.join(PRESET_DIR, _info["file"])
-        if not os.path.exists(_path):
-            with open(_path, "wb") as _f:
-                _f.write(base64.b64decode(_info["b64"]))
-        PRESET_LABELS[_key] = _label
-        PRESET_TEXT[_key] = _info.get("text", "")
-    print("内置音色预设：", list(PRESET_LABELS.values()), flush=True)
-except Exception as _e:
-    print("⚠️ 预设加载失败（仍可上传参考音频使用）：", _e, flush=True)
+for _label, _file in PRESET_DEFS:
+    PRESET_LABELS[os.path.splitext(_file)[0]] = _label
+
+def _ensure_presets():
+    import urllib.request
+    for _label, _file in PRESET_DEFS:
+        _path = os.path.join(PRESET_DIR, _file)
+        if os.path.exists(_path) and os.path.getsize(_path) > 1000:
+            continue
+        try:
+            urllib.request.urlretrieve(PRESET_BASE + "/" + _file, _path)
+            print("下载预设音色：%s" % _label, flush=True)
+        except Exception as _e:
+            print("⚠️ 预设音色「%s」下载失败（仍可上传参考音频使用）：%s" % (_label, _e), flush=True)
+
+_ensure_presets()
+print("内置音色预设：", list(PRESET_LABELS.values()), flush=True)
 
 PRESET_CHOICES = [("默认音色（不克隆）", "")] + [(lbl, key) for key, lbl in PRESET_LABELS.items()]
 
@@ -155,7 +167,7 @@ def synth(source, preset, ref_audio, ref_text, lib_voice, synth_text, synth_lang
     if source == "音色预设":
         if preset:
             prompt_path = os.path.join(PRESET_DIR, preset + ".wav")
-            prompt_text = PRESET_TEXT.get(preset)
+            prompt_text = PRESET_TEXT
             info.append("音色预设：" + PRESET_LABELS.get(preset, preset))
     elif source == "上传参考音频":
         if ref_audio:

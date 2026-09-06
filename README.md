@@ -47,7 +47,7 @@
 
 | 文件 | 作用 |
 |---|---|
-| `dots_tts_panel.ipynb` | 主 notebook（内置音色已 base64 嵌入，开箱即用） |
+| `dots_tts_panel.ipynb` | 主 notebook（音色预设运行时从本仓库 `presets/` 下载，代码轻量不卡顿） |
 | `panel_src.py` | 面板源码（Gradio Blocks，被 notebook 内嵌，本地可读改） |
 | `presets/*.wav` | 内置音色预设的参考音频（macOS `say` 生成，用于克隆参考） |
 | `gen_dots_tts_panel.py` | 生成脚本：读取 `panel_src.py` + `presets/` 重新生成 notebook |
