@@ -45,12 +45,12 @@ if not os.path.exists(PY):
     subprocess.run("uv python install 3.11", shell=True)
     subprocess.run("uv venv /content/py311 --python 3.11", shell=True)
     subprocess.run("uv pip install --python /content/py311/bin/python torch==2.11.0 torchaudio==2.11.0", shell=True)
-    subprocess.run("uv pip install --python /content/py311/bin/python dots.tts huggingface_hub soundfile 'gradio==4.44.1' faster-whisper", shell=True)
+    subprocess.run("uv pip install --python /content/py311/bin/python dots.tts huggingface_hub soundfile 'gradio>=6.17,<7' faster-whisper", shell=True)
     print("✅ 环境重建完成")
 else:
-    # 已有环境：补齐转写组件 + 固定 gradio 版本（已满足则秒过）
+    # 已有环境：补齐转写组件 + 升级 gradio 到 6.x（修复与新版 huggingface_hub 的冲突）
     subprocess.run("pip install -q uv", shell=True)
-    subprocess.run("uv pip install --python /content/py311/bin/python faster-whisper 'gradio==4.44.1'", shell=True)
+    subprocess.run("uv pip install --python /content/py311/bin/python faster-whisper 'gradio>=6.17,<7'", shell=True)
     print("✅ 环境已就绪（含参考音频转写组件）")
 
 # ---- 2. 写面板脚本 ----
