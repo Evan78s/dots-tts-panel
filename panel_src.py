@@ -22,22 +22,39 @@ os.makedirs(PRESET_DIR, exist_ok=True)
 LIB_JSON = os.path.join(LIB_DIR, "voices.json")
 
 # ---------- 内置音色预设（运行时从 GitHub 仓库下载参考音频，避免内嵌 base64 拖慢代码页） ----------
+# 每项：(key, 标签, 文件名, 参考文本)。参考文本必须与音频实际内容一致。
 PRESET_DEFS = [
-    ("婷婷（温柔女声）", "tingting.wav"),
-    ("埃迪（沉稳男声）", "eddy.wav"),
-    ("美佳（甜美女声）", "meijia.wav"),
-    ("桑迪（知性女声）", "sandy.wav"),
+    # 中文
+    ("tingting", "婷婷（温柔女声）", "tingting.wav", "大家好，我是你的专属语音助手。今天天气很不错，我们一起来聊一聊最近发生的趣事吧。"),
+    ("eddy", "埃迪（沉稳男声）", "eddy.wav", "各位听众朋友，大家好。欢迎收听今天的节目，希望你能喜欢我的声音，也祝你度过愉快的一天。"),
+    ("meijia", "美佳（甜美女声）", "meijia.wav", "你好呀，很高兴认识你。今天想跟你分享一些有趣的事情，希望你听了以后会开心一点。"),
+    ("sandy", "桑迪（知性女声）", "sandy.wav", "大家好，我是你的语音助手。无论是工作还是生活，我都愿意随时为你提供帮助和建议。"),
+    # 英语
+    ("samantha", "Samantha（美式女声）", "samantha.wav", "Hello, I'm your friendly voice assistant. It's a pleasure to meet you, and I'm here to help with whatever you need today."),
+    ("daniel", "Daniel（英式男声）", "daniel.wav", "Good day to you, and welcome. I hope you find my voice clear, natural, and pleasant to listen to."),
+    ("karen", "Karen（澳洲女声）", "karen.wav", "G'day, I'm your voice assistant. Let's get started and make the most of today, together."),
+    ("moira", "Moira（爱尔兰女声）", "moira.wav", "Hello there, lovely to meet you. I'll be guiding you through today, so just relax and enjoy the conversation."),
+    # 其他语言
+    ("kyoko", "Kyoko（日语女声）", "kyoko.wav", "こんにちは、あなたの音声アシスタントです。今日もよろしくお願いします。"),
+    ("yuna", "Yuna（韩语女声）", "yuna.wav", "안녕하세요, 저는 당신의 음성 비서입니다. 오늘도 좋은 하루 보내세요."),
+    ("thomas", "Thomas（法语男声）", "thomas.wav", "Bonjour, je suis votre assistant vocal. C'est un plaisir de vous accompagner aujourd'hui."),
+    ("anna", "Anna（德语女声）", "anna.wav", "Hallo, ich bin deine Sprachassistentin. Schön, dich heute begleiten zu dürfen."),
+    # 情绪参考（英文，用来把情绪/语气转移到合成结果；合成中文会带英文口音，适合做情绪参考）
+    ("goodnews", "开心·欢快（情绪参考）", "goodnews.wav", "Great news! Everything went perfectly today!"),
+    ("badnews", "悲伤·低沉（情绪参考）", "badnews.wav", "I'm afraid I have some difficult news to share with you."),
+    ("whisper", "悄悄话·耳语（情绪参考）", "whisper.wav", "Psst, come a little closer. I have a secret to tell you, but just between us, quietly."),
 ]
-PRESET_TEXT = "大家好，我是你的专属语音助手。今天天气很不错，我们一起聊一聊最近发生的趣事吧。"
 PRESET_BASE = "https://raw.githubusercontent.com/Evan78s/dots-tts-panel/main/presets"
 
 PRESET_LABELS = {}
-for _label, _file in PRESET_DEFS:
-    PRESET_LABELS[os.path.splitext(_file)[0]] = _label
+PRESET_TEXTS = {}
+for _key, _label, _file, _text in PRESET_DEFS:
+    PRESET_LABELS[_key] = _label
+    PRESET_TEXTS[_key] = _text
 
 def _ensure_presets():
     import urllib.request
-    for _label, _file in PRESET_DEFS:
+    for _key, _label, _file, _text in PRESET_DEFS:
         _path = os.path.join(PRESET_DIR, _file)
         if os.path.exists(_path) and os.path.getsize(_path) > 1000:
             continue
@@ -168,7 +185,7 @@ def synth(source, preset, ref_audio, ref_text, lib_voice, synth_text, synth_lang
     if source == "音色预设":
         if preset:
             prompt_path = os.path.join(PRESET_DIR, preset + ".wav")
-            prompt_text = PRESET_TEXT
+            prompt_text = PRESET_TEXTS.get(preset, "")
             info.append("音色预设：" + PRESET_LABELS.get(preset, preset))
     elif source == "上传参考音频":
         if ref_audio:
@@ -246,6 +263,7 @@ with gr.Blocks(title="dots.tts 语音合成面板") as demo:
             source = gr.Radio(["音色预设", "上传参考音频", "音色库"], value="音色预设", label="音色来源")
             preset_dd = gr.Dropdown(PRESET_CHOICES, value="", label="音色预设")
             preview_btn = gr.Button("试听预设音色")
+            gr.Markdown("💡 **调情绪/语气**：情绪来自参考音频的韵律——选「情绪参考」预设，或上传带目标情绪的人声（3-10 秒）；再用下方「音色种子」换韵律。")
             preview_audio = gr.Audio(label="预设试听")
             ref_audio = gr.Audio(label="参考音频（3-10 秒清晰人声）", type="filepath", visible=False)
             transcribe_btn = gr.Button("识别转写", visible=False)
