@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
-# 生成 dots.tts 面板 Colab notebook（升级版）
-# 功能：中文界面 + 音色预设 + 参考音频转写(ASR) + 音色库(持久化到 Drive) + 音色相似度
+# 生成 dots.tts 面板 Colab notebook（v2.1）
+# 核心改进：
+#   1) 环境打包缓存到 Drive（断连后免重装，秒恢复）
+#   2) 模型复制到本地 SSD（加载快，不用每次从 Drive 慢读 5GB）
+#   3) 启动前先杀旧进程 + 智能等待地址（20 分钟 + 检测进程退出）
+#   4) 代码块拆分：挂载 / 环境 / 模型 / 启动 + 一键启动
 import json, os
 
 BASE = os.path.dirname(os.path.abspath(__file__))
@@ -18,74 +22,162 @@ def code(text):
             "source": [l + "\n" for l in text.strip("\n").split("\n")]}
 
 
-# ---- 1. 读取面板脚本 ----
+# ---- 读取面板脚本 ----
 panel_code = open(PANEL_SRC, encoding="utf-8").read()
 
-# ---- 3. 第 1 步 cell 模板 ----
-STEP1 = '''import os, subprocess, time, re
+# ============================================================
+# 第 1 步：挂载 Drive + 定义路径
+# ============================================================
+STEP_MOUNT = '''# ---- 第 1 步：挂载 Google Drive + 定义路径 ----
+import os, subprocess, time, re, shutil, sys
 
-PY = "/content/py311/bin/python"
+CACHE = "/content/drive/MyDrive/dots_cache"        # Drive 持久化目录（环境 + 模型 + 音色库）
+PY = "/content/py311/bin/python"                    # 本地 Python 环境
+ENV_TARBALL = os.path.join(CACHE, "py311.tar.gz")   # 环境备份包（首次装好后存到 Drive）
+LOCAL_HF = "/content/dots_hf_cache"                 # 本地 SSD 模型缓存（加载快）
+PANEL_PY = "/content/panel.py"
 
-# ---- 0. 挂载 Google Drive（缓存模型，下次免重下 5GB）----
-CACHE = "/content/drive/MyDrive/dots_cache"
 try:
     from google.colab import drive
-    if not os.path.exists("/content/drive/MyDrive"):
+    if not os.path.isdir("/content/drive/MyDrive"):
         drive.mount("/content/drive")
     os.makedirs(CACHE, exist_ok=True)
-    print("✅ Drive 已挂载，模型缓存：", CACHE)
+    DRIVE_OK = True
+    print("✅ Drive 已挂载，持久化目录：", CACHE, flush=True)
 except Exception as e:
-    CACHE = None
-    print("⚠️ Drive 未挂载（模型缓存在本地，下次需重下）：", e)
+    DRIVE_OK = False
+    print("⚠️ Drive 未挂载（断连后需重装环境 + 重下模型）：", e, flush=True)
+'''
 
-# ---- 1. 环境（缺失才重建，约 3-5 分钟）----
-if not os.path.exists(PY):
-    print("🔄 环境缺失，重建中（约 3-5 分钟）...")
-    subprocess.run("pip install -q uv", shell=True)
-    subprocess.run("uv python install 3.11", shell=True)
-    subprocess.run("uv venv /content/py311 --python 3.11", shell=True)
-    subprocess.run("uv pip install --python /content/py311/bin/python torch==2.11.0 torchaudio==2.11.0", shell=True)
-    subprocess.run("uv pip install --python /content/py311/bin/python dots.tts huggingface_hub soundfile 'gradio>=6.17,<7' faster-whisper", shell=True)
-    print("✅ 环境重建完成")
+# ============================================================
+# 第 2 步：环境（首次安装并缓存到 Drive；之后秒恢复）
+# ============================================================
+STEP_ENV = '''# ---- 第 2 步：准备环境（首次安装并缓存到 Drive，之后秒恢复免重装）----
+import os, subprocess
+
+def _py_ok(p):
+    try:
+        return subprocess.run([p, "--version"], capture_output=True, text=True, timeout=60).returncode == 0
+    except Exception:
+        return False
+
+def _build_env():
+    print("🔄 首次安装环境（约 3-5 分钟，之后自动缓存到 Drive）...", flush=True)
+    subprocess.run("python3 -m venv /content/py311", shell=True, check=True)
+    subprocess.run("pip install -q uv", shell=True, check=True)
+    UV = "uv pip install --python /content/py311/bin/python"
+    subprocess.run(UV + " torch==2.11.0 torchaudio==2.11.0", shell=True, check=True)
+    subprocess.run(UV + " dots.tts huggingface_hub soundfile 'gradio>=6.17,<7' faster-whisper", shell=True, check=True)
+    print("✅ 环境安装完成", flush=True)
+    print("环境 Python：", subprocess.run([PY, "-c", "import sys;print(sys.version.split()[0])"],
+          capture_output=True, text=True).stdout.strip(), flush=True)
+    if DRIVE_OK:
+        print("📦 正在把环境打包缓存到 Drive（首次稍慢，约 2-4 分钟）...", flush=True)
+        subprocess.run(["tar", "czf", ENV_TARBALL, "-C", "/", "content/py311"], check=True)
+        print("✅ 环境已缓存到 Drive：", ENV_TARBALL, flush=True)
+    else:
+        print("⚠️ Drive 未挂载，本次环境未缓存（断连后需重装）", flush=True)
+
+if _py_ok(PY):
+    print("✅ 环境已就绪（免重装）", flush=True)
+elif DRIVE_OK and os.path.exists(ENV_TARBALL):
+    print("🔄 从 Drive 恢复环境（约 1-2 分钟，免重装依赖）...", flush=True)
+    subprocess.run(["tar", "xzf", ENV_TARBALL, "-C", "/"], check=True)
+    if _py_ok(PY):
+        print("✅ 环境恢复完成", flush=True)
+    else:
+        print("⚠️ 缓存环境损坏/不兼容，重新安装...", flush=True)
+        _build_env()
 else:
-    # 已有环境：补齐转写组件 + 升级 gradio 到 6.x（修复与新版 huggingface_hub 的冲突）
-    subprocess.run("pip install -q uv", shell=True)
-    subprocess.run("uv pip install --python /content/py311/bin/python faster-whisper 'gradio>=6.17,<7'", shell=True)
-    print("✅ 环境已就绪（含参考音频转写组件）")
+    _build_env()
+'''
 
-# ---- 2. 写面板脚本 ----
+# ============================================================
+# 第 3 步：准备模型（Drive -> 本地 SSD）+ 写面板代码
+# ============================================================
+STEP_PREP = '''# ---- 第 3 步：准备模型（复制到本地 SSD，加载快）+ 写面板代码 ----
+import os, subprocess
+
 panel_code = r"""__PANEL_CODE__"""
-open("panel.py", "w", encoding="utf-8").write(panel_code)
+open("/content/panel.py", "w", encoding="utf-8").write(panel_code)
+print("✅ 面板代码已写入 /content/panel.py", flush=True)
 
-# ---- 3. 启动面板 + 拿公网地址 ----
+drive_hub = os.path.join(CACHE, "hub") if DRIVE_OK else None
+local_hub = os.path.join(LOCAL_HF, "hub")
+
+if drive_hub and os.path.isdir(drive_hub):
+    if not os.path.isdir(local_hub):
+        print("📦 复制模型缓存到本地 SSD（含 blobs 软链，约 1-3 分钟，之后加载飞快）...", flush=True)
+        os.makedirs(LOCAL_HF, exist_ok=True)
+        subprocess.run(["cp", "-a", drive_hub, local_hub], check=True)
+        print("✅ 模型已就位本地 SSD", flush=True)
+    else:
+        print("✅ 模型已在本地 SSD（本次会话已复制过，跳过）", flush=True)
+    HF_HOME_USE = LOCAL_HF
+else:
+    # 首次运行：还没有 Drive 缓存，模型将直接下载到 Drive
+    HF_HOME_USE = CACHE if DRIVE_OK else None
+    print("ℹ️ 首次运行：模型将下载到", HF_HOME_USE or "默认缓存", flush=True)
+'''
+
+# ============================================================
+# 第 4 步：启动面板 + 智能等待地址
+# ============================================================
+STEP_LAUNCH = '''# ---- 第 4 步：启动面板 + 智能等待公网地址 ----
+import subprocess, os, time, re
+
+# 杀掉可能残留的旧面板进程（避免抢 GPU 导致加载失败）
+subprocess.run("pkill -f panel.py || true", shell=True)
+time.sleep(2)
+
 env = dict(os.environ)
-if CACHE:
+if 'HF_HOME_USE' in dir() and HF_HOME_USE:
+    env["HF_HOME"] = HF_HOME_USE
+elif DRIVE_OK and os.path.isdir(CACHE):
     env["HF_HOME"] = CACHE
-subprocess.Popen([PY, "-u", "panel.py"], stdout=open("panel.log", "w"), stderr=subprocess.STDOUT, env=env)
 
+proc = subprocess.Popen([PY, "-u", "/content/panel.py"],
+                        stdout=open("panel.log", "w"),
+                        stderr=subprocess.STDOUT, env=env)
+
+URL_RE = re.compile(r"https://[a-z0-9.-]+\\.gradio\\.live")
 url = None
-for i in range(1, 601):
-    time.sleep(1)
+t0 = time.time()
+i = 0
+while time.time() - t0 < 1200:          # 最多等 20 分钟
+    if proc.poll() is not None:          # 进程已退出
+        break
     if os.path.exists("panel.log"):
-        m = re.search("https://[a-z0-9-]+.gradio.live", open("panel.log").read())
+        text = open("panel.log", encoding="utf-8", errors="ignore").read()
+        m = URL_RE.search(text)
         if m:
             url = m.group(0)
             break
-    if i % 30 == 0:
-        print(f"  ... 已等 {i} 秒（首次加载模型较慢，尤其从 Drive 读取）", flush=True)
+    i += 1
+    if i % 15 == 0:
+        print("  ... 已等 %d 秒" % (i * 2), flush=True)
+    time.sleep(2)
 
 if url:
     open("panel_url.txt", "w").write(url)
-    print("🌐 面板公网地址：", url)
-    print("   用浏览器打开这个地址即可（保持梯子开启）。")
+    print("🌐 面板公网地址：", url, flush=True)
+    print("   用浏览器打开这个地址（保持梯子开启）。", flush=True)
 else:
-    print("⚠️ 未获取到地址，日志：")
-    print(open("panel.log").read()[-2000:] if os.path.exists("panel.log") else "无日志")
+    print("⚠️ 未获取到地址。", flush=True)
+    if proc.poll() is not None:
+        print("面板进程已退出，退出码：", proc.returncode, flush=True)
+    if os.path.exists("panel.log"):
+        tail = open("panel.log", encoding="utf-8", errors="ignore").read()[-3000:]
+        print("日志末尾：", flush=True)
+        print(re.sub(r"\\x1b\\[[0-9;]*m", "", tail), flush=True)
+    else:
+        print("无日志", flush=True)
 '''
 
-STEP1 = STEP1.replace("__PANEL_CODE__", panel_code)
+# ---- 组合成「一键启动」 ----
+STEP_ALL = STEP_MOUNT + "\n\n" + STEP_ENV + "\n\n" + STEP_PREP + "\n\n" + STEP_LAUNCH
 
-# ---- 4. 组装 notebook ----
+# ---- 组装 notebook ----
 cells = []
 
 cells.append(md("""# dots.tts 语音合成面板（小红书 · Colab 版）
@@ -95,19 +187,13 @@ cells.append(md("""# dots.tts 语音合成面板（小红书 · Colab 版）
 **面板功能：**
 - ✅ 界面与语言选项**全中文**
 - ✅ **音色预设**：内置 4 个中文音色，点「试听」可预览
-- ✅ **参考音频转写**：上传人声 → 自动识别文字 → 可手动更正（文字越准，克隆越像）
-- ✅ **音色库**：把上传的声音保存下来，以后直接选，不用重复上传
-- ✅ **音色相似度**：调节克隆相似程度
-- ✅ 20+ 语言 + 中文方言口音
+- ✅ **参考音频转写**：上传人声 → 自动识别文字 → 可手动更正
+- ✅ **音色库**：把上传的声音保存到 Drive，以后直接选
+- ✅ **音色相似度** + 高级设置（音色种子 / 生成质量 / 引导强度 / 文本规范化）
 
-**模型缓存在你的 Google Drive**，下次启动不用重新下载 5GB。
-
-**每次使用只需 3 步：**
-1. 菜单「运行时 → 更改运行时类型 → GPU」
-2. 跑「第 1 步」一键启动（首次约 5-8 分钟，之后快）
-3. 打开打印出来的 `https://xxx.gradio.live` 公网地址
-
-> ⚠️ 打开面板地址时要**开着梯子**（跟访问 Colab 同一个）。"""))
+**环境 + 模型都缓存到你的 Google Drive**：
+- 首次装好后，**断连重开不用再重装环境**（约 1-2 分钟秒恢复）
+- 模型复制到本地 SSD 加载，**不用每次从 Drive 慢读 5GB**"""))
 
 cells.append(md("""## 第 0 步：确认 GPU（菜单操作，不是代码）
 
@@ -115,62 +201,58 @@ cells.append(md("""## 第 0 步：确认 GPU（菜单操作，不是代码）
 
 cells.append(code("""!nvidia-smi"""))
 
-cells.append(md("""## 第 1 步：一键启动面板
+cells.append(md("""## 使用流程（先看清楚，能省不少时间）
 
-跑这一格就行：自动挂载 Drive（缓存模型）→ 装环境（缺失才装，含转写组件）→ 启动面板 → 打印公网地址。"""))
+**首次使用**：从上到下依次跑「第 0 步 → 第 4 步」（约 5-8 分钟，会自动安装 + 缓存）。
 
-cells.append(code(STEP1))
+**以后每次 / 断连重开**：**只跑最后的「🚀 一键启动」这一格**（约 2-4 分钟，免重装、模型秒加载）。
 
-cells.append(md("""## 🔄 重启面板（会话没断、但面板挂了时用）
+> 分步的第 1-4 步和「一键启动」做的事完全一样，只是拆开方便你看懂 / 排错。日常只用「一键启动」这一格即可。"""))
 
-如果 Colab 还开着、只是面板打不开/地址失效，跑这格快速重启（**不重装环境**，只重新加载模型，约 1 分钟）。"""))
+cells.append(md("""## 第 1 步：挂载 Google Drive + 定义路径
 
-cells.append(code("""import subprocess, os, time, re
+把环境备份、模型、音色库都放在你的 Drive 上，这样断连后不丢。"""))
 
-PY = "/content/py311/bin/python"
-CACHE = "/content/drive/MyDrive/dots_cache"
+cells.append(code(STEP_MOUNT))
 
-# 杀掉旧面板进程
-subprocess.run("pkill -f panel.py || true", shell=True)
-time.sleep(2)
+cells.append(md("""## 第 2 步：准备环境（首次安装 / 之后秒恢复）
 
-# 重新启动（环境已存在，不重装）
-env = dict(os.environ)
-if os.path.isdir(CACHE):
-    env["HF_HOME"] = CACHE
-subprocess.Popen([PY, "-u", "panel.py"], stdout=open("panel.log", "w"), stderr=subprocess.STDOUT, env=env)
+- **第一次**：安装全部依赖（约 3-5 分钟），然后**打包缓存到 Drive**。
+- **之后每次**：直接从 Drive 解包恢复（约 1-2 分钟），**不再重装**。"""))
 
-url = None
-for i in range(1, 601):
-    time.sleep(1)
-    if os.path.exists("panel.log"):
-        m = re.search("https://[a-z0-9-]+.gradio.live", open("panel.log").read())
-        if m:
-            url = m.group(0)
-            break
-    if i % 30 == 0:
-        print(f"  ... 已等 {i} 秒", flush=True)
+cells.append(code(STEP_ENV))
 
-if url:
-    open("panel_url.txt", "w").write(url)
-    print("🌐 新面板地址：", url)
-else:
-    print("⚠️ 失败，日志：")
-    print(open("panel.log").read()[-2000:] if os.path.exists("panel.log") else "无日志")"""))
+cells.append(md("""## 第 3 步：准备模型 + 写面板代码
 
-cells.append(md("""## 📌 下次怎么用（重要）
+把 Drive 上的模型缓存**复制到本地 SSD**（加载比直接从 Drive 读快数倍），并写入面板源码。
 
-**把本 notebook 保存到你的 Google Drive**，以后直接从 Drive 打开：
+> 首次运行时 Drive 还没有模型，会直接下载到 Drive。"""))
 
-1. 菜单 **文件 → 在 Drive 中保存副本**
-2. 下次用：从 Drive 打开这个副本 → 选 GPU → 跑「第 1 步」即可
+cells.append(code(STEP_PREP.replace("__PANEL_CODE__", panel_code)))
 
-**为什么快：**
-- 模型缓存到了 Drive（`/content/drive/MyDrive/dots_cache`），**下次不重下 5GB**
-- 音色库也存到 Drive（`dots_cache/voice_library/`），**保存的音色下次还在**
-- 只有 Python 环境需要重装（约 2-3 分钟），这是 Colab 免费版不可避免的
+cells.append(md("""## 第 4 步：启动面板 + 等待公网地址
 
-**地址有效期：** 面板地址只要 Colab 会话不断线就有效；断线重连后重跑「第 1 步」会拿到新地址。"""))
+启动前会**先杀掉旧面板进程**（避免抢 GPU 导致加载失败），然后智能等待地址：最多等 **20 分钟**，期间若进程崩了会立即停下并打印日志末尾，方便定位。"""))
+
+cells.append(code(STEP_LAUNCH))
+
+cells.append(md("""## 🚀 一键启动（断连后 / 以后每次只跑这一格）
+
+这一格 = 第 1 + 2 + 3 + 4 步的合体。**首次安装完成后，以后每次（含断连重开）只跑这一格就行**，约 2-4 分钟出地址。"""))
+
+cells.append(code(STEP_ALL.replace("__PANEL_CODE__", panel_code)))
+
+cells.append(md("""## ❓ 常见问题
+
+| 问题 | 解决 |
+|---|---|
+| 首次很慢 | 正常：装环境 + 下 5GB 模型，约 5-8 分钟 |
+| 断连后还要重装吗 | 不用了。环境已打包到 Drive，重开跑「一键启动」约 2-4 分钟 |
+| 面板地址打不开 | 大陆用户需挂梯子（跟访问 Colab 同一个）；或换「全局模式」 |
+| 等了很久没地址 | 最多等 20 分钟；若进程报错会打印日志末尾，照着修 |
+| 转写报错 / 组件缺失 | 环境已内置 faster-whisper；仍报错可删 Drive 的 `py311.tar.gz` 重装一次 |
+| 音色下次不见了 | 需挂载 Drive（音色库存 `dots_cache/voice_library/`） |
+| 想彻底重装 | 删除 Drive 的 `dots_cache/py311.tar.gz`，再跑「一键启动」会自动重装 |"""))
 
 notebook = {
     "nbformat": 4,

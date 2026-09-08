@@ -14,10 +14,17 @@
 
 1. 点上面的「Open In Colab」按钮
 2. 菜单「**运行时 → 更改运行时类型 → 硬件加速器：GPU**」
-3. 运行「**第 1 步 一键启动面板**」那个 cell（首次约 5-8 分钟）
-4. 浏览器打开打印出来的 `https://xxx.gradio.live` 公网地址
+3. **首次使用**：从上到下跑「第 0 步 → 第 4 步」（约 5-8 分钟，会自动安装依赖 + 缓存到 Drive）
+4. **以后每次 / 断连重开**：只跑「**🚀 一键启动**」这一格（约 2-4 分钟，**免重装环境、模型秒加载**）
+5. 浏览器打开打印出来的 `https://xxx.gradio.live` 公网地址
 
 > 想复制到自己的 Colab：打开后点顶部「**复制到云端硬盘**」（File → Save a copy in Drive）。
+
+### 为什么断连后不用重装了
+
+- **环境**（Python + torch + dots.tts）首次装好后会**打包成 `py311.tar.gz` 存到 Drive**，断连重开直接解包恢复，不再重跑安装。
+- **模型**缓存到 Drive（`dots_cache/hub/`），每次启动自动**复制到本地 SSD** 再加载，比直接从 Drive 慢读快数倍。
+- **音色库**存到 Drive（`dots_cache/voice_library/`），保存的音色下次还在。
 
 ## 功能
 
@@ -38,9 +45,11 @@
 |---|---|
 | 首次很慢 | 正常，装环境 + 下 5GB 模型，约 5-8 分钟 |
 | 面板地址打不开 | 大陆用户需挂梯子（跟访问 Colab 同一个）；或换「全局模式」 |
-| 转写报错 / 转写组件缺失 | 重跑「第 1 步」，会自动补齐 `faster-whisper` 转写组件 |
+| 断连后还要重装吗 | 不用了，环境已缓存到 Drive，跑「🚀 一键启动」约 2-4 分钟 |
+| 等了很久没地址 | 最多等 20 分钟；若进程崩了会打印日志末尾，照着修 |
+| 转写报错 / 组件缺失 | 环境已内置 `faster-whisper`；仍报错可删 Drive 的 `py311.tar.gz` 重装一次 |
 | 保存的音色下次不见了 | 需挂载了 Google Drive（音色库存在 `dots_cache/voice_library/`） |
-| 会话断了 / 环境没了 | 重跑「第 1 步」；若 Colab 还开着只是面板挂了，跑「🔄 重启面板」cell |
+| 想彻底重装 | 删除 Drive 的 `dots_cache/py311.tar.gz`，再跑「一键启动」会自动重装 |
 | 提示 GPU 不可用 | Colab 免费版配额动态，过几小时再试 |
 
 ## 目录说明
@@ -58,7 +67,8 @@
 
 | 版本 | 说明 | Colab 链接 |
 |---|---|---|
-| **v2.0.0**（最新） | 音色预设（4 个）+ 参考音频转写 + 音色库（持久化到 Drive）+ 音色相似度 + 高级设置（音色种子 / 生成质量 / 引导强度 / 文本规范化）+ 顶部 Banner 联系链接 | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/v2.0.0/dots_tts_panel.ipynb) |
+| **v2.1.0**（最新） | 环境打包缓存到 Drive（断连免重装）+ 模型复制本地 SSD（加载快）+ 启动前杀旧进程 + 智能等待地址（20 分钟）+ 代码块拆分 + 「🚀 一键启动」 | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/main/dots_tts_panel.ipynb) |
+| **v2.0.0** | 音色预设（4 个）+ 参考音频转写 + 音色库（持久化到 Drive）+ 音色相似度 + 高级设置（音色种子 / 生成质量 / 引导强度 / 文本规范化）+ 顶部 Banner 联系链接 | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/v2.0.0/dots_tts_panel.ipynb) |
 | **v1.0.0** | 基础版：多语言 TTS + 零样本声音克隆 + 公网面板 | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/v1.0.0/dots_tts_panel.ipynb) |
 
 > 想打开旧版：把链接里的 `v2.0.0` 换成 `v1.0.0` 即可。

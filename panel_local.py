@@ -5,23 +5,34 @@ import torch
 from dots_tts.runtime import DotsTtsRuntime
 from dots_tts.utils.util import seed_everything
 
-# ---------- 加载模型 ----------
-print("HF_HOME =", os.environ.get("HF_HOME"), flush=True)
-cap = torch.cuda.get_device_capability(0) if torch.cuda.is_available() else (0, 0)
-PRECISION = "bfloat16" if cap[0] >= 8 else "float16"
-print("加载模型...", flush=True)
-runtime = DotsTtsRuntime.from_pretrained("dots-studio/dots.tts-soar", precision=PRECISION, optimize=False)
-print("模型加载完成", flush=True)
-
-# ---------- 目录 ----------
-CACHE = os.environ.get("HF_HOME") or ("/content/drive/MyDrive/dots_cache" if os.path.isdir("/content/drive/MyDrive") else None)
-LIB_DIR = os.path.join(CACHE, "voice_library") if CACHE else "/content/voice_library"
-PRESET_DIR = "/content/presets"
+# ---------- 本地路径（都在本脚本所在目录） ----------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PRESET_DIR = os.path.join(BASE_DIR, "presets")           # 内置音色参考音频
+LIB_DIR = os.path.join(BASE_DIR, "voice_library")        # 音色库（持久化到本地）
 os.makedirs(LIB_DIR, exist_ok=True)
 os.makedirs(PRESET_DIR, exist_ok=True)
 LIB_JSON = os.path.join(LIB_DIR, "voices.json")
 
-# ---------- 内置音色预设（运行时从 GitHub 仓库下载参考音频，避免内嵌 base64 拖慢代码页） ----------
+# ---------- 设备 & 精度 ----------
+if torch.cuda.is_available():
+    cap = torch.cuda.get_device_capability(0)
+    PRECISION = "bfloat16" if cap[0] >= 8 else "float16"
+    DEVICE_NOTE = "CUDA"
+elif torch.backends.mps.is_available():
+    PRECISION = "float16"
+    DEVICE_NOTE = "Apple MPS"
+else:
+    PRECISION = "float32"
+    DEVICE_NOTE = "CPU（无 GPU，会比较慢）"
+print("运行设备：", DEVICE_NOTE, "| 精度：", PRECISION, flush=True)
+
+# ---------- 模型：默认自动下载；也可用 DOTS_MODEL_DIR 指向本地已下载目录 ----------
+MODEL = os.environ.get("DOTS_MODEL_DIR") or "dots-studio/dots.tts-soar"
+print("加载模型...（首次会自动下载约 5GB）", flush=True)
+runtime = DotsTtsRuntime.from_pretrained(MODEL, precision=PRECISION, optimize=False)
+print("模型加载完成", flush=True)
+
+# ---------- 内置音色预设（本地仓库自带 presets/，缺失时从 GitHub 下载） ----------
 PRESET_DEFS = [
     ("婷婷（温柔女声）", "tingting.wav"),
     ("埃迪（沉稳男声）", "eddy.wav"),
@@ -86,7 +97,7 @@ LANG_CHOICES = [
     ("口音：吴语", "口音:吴语"),
 ]
 
-# ---------- 音色库（持久化到 Drive） ----------
+# ---------- 音色库（持久化到本地） ----------
 def load_library():
     if os.path.exists(LIB_JSON):
         try:
@@ -106,8 +117,8 @@ def get_whisper():
         from faster_whisper import WhisperModel
         _whisper = WhisperModel(
             "small",
-            device="cuda" if torch.cuda.is_available() else "cpu",
-            compute_type="float16" if torch.cuda.is_available() else "int8",
+            device="cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu"),
+            compute_type="float16" if (torch.cuda.is_available() or torch.backends.mps.is_available()) else "int8",
         )
     return _whisper
 
@@ -204,7 +215,7 @@ def synth(source, preset, ref_audio, ref_text, lib_voice, synth_text, synth_lang
         info.append("未用参考音色（模型默认声音）")
     return (sr, audio), " · ".join(info)
 
-# ---------- 音色来源切换：控制各区域显示 ----------
+# ---------- 音色来源切换 ----------
 def on_source_change(src):
     if src == "音色预设":
         return (gr.update(visible=True), gr.update(visible=True), gr.update(visible=True),
@@ -216,16 +227,14 @@ def on_source_change(src):
                 gr.update(visible=True), gr.update(visible=True), gr.update(visible=True),
                 gr.update(visible=True), gr.update(visible=True), gr.update(visible=False),
                 gr.update(visible=False))
-    # 音色库
     return (gr.update(visible=False), gr.update(visible=False), gr.update(visible=False),
             gr.update(visible=False), gr.update(visible=False), gr.update(visible=False),
             gr.update(visible=False), gr.update(visible=False), gr.update(visible=True),
             gr.update(visible=True))
 
-# ---------- 顶部 Banner（标题 + 说明 + 联系链接） ----------
+# ---------- 顶部 Banner ----------
 BILIBILI_URL = "https://space.bilibili.com/380877309"
 DAOYAKE_URL = "https://www.daoyanke.cn"
-
 _BANNER_HTML = (
     '<div style="text-align:center;padding:20px 14px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:14px;margin-bottom:14px;">'
     '<h1 style="color:#fff;margin:0 0 6px;font-size:28px;">🎙️ dots.tts 语音合成面板</h1>'
@@ -287,5 +296,7 @@ with gr.Blocks(title="dots.tts 语音合成面板") as demo:
                             speaker_scale, seed, num_steps, guidance_scale, normalize_text],
                     [result_audio, result_info])
 
-print("启动 Gradio 面板（share=True，正在建立公网隧道）...", flush=True)
-demo.launch(share=True, debug=False)
+# 本地默认只开 localhost；想开公网隧道设 GRADIO_SHARE=1
+_SHARE = os.environ.get("GRADIO_SHARE", "0") == "1"
+print("启动 Gradio 面板（share=%s）..." % _SHARE, flush=True)
+demo.launch(share=_SHARE, debug=False, server_name="0.0.0.0", server_port=7860)
