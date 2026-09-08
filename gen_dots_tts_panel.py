@@ -52,44 +52,56 @@ except Exception as e:
 # ============================================================
 # 第 2 步：环境（首次安装并缓存到 Drive；之后秒恢复）
 # ============================================================
-STEP_ENV = '''# ---- 第 2 步：准备环境（首次安装并缓存到 Drive，之后秒恢复免重装）----
+STEP_ENV = '''# ---- 第 2 步：准备环境（首次安装并缓存到 Drive，之后秒恢复；缺依赖会自动补齐）----
 import os, subprocess
 
-def _py_ok(p):
+_REQ = ["torch", "gradio", "dots_tts", "faster_whisper", "soundfile", "huggingface_hub"]
+
+def _py_runs(p):
     try:
         return subprocess.run([p, "--version"], capture_output=True, text=True, timeout=60).returncode == 0
     except Exception:
         return False
 
-def _build_env():
-    print("🔄 首次安装环境（约 3-5 分钟，之后自动缓存到 Drive）...", flush=True)
-    subprocess.run("python3 -m venv /content/py311", shell=True, check=True)
+def _deps_ok(p):
+    _code = "import importlib.util as u, sys; sys.exit(0 if all(u.find_spec(m) for m in %r) else 1)" % (_REQ,)
+    try:
+        return subprocess.run([p, "-c", _code], capture_output=True, text=True, timeout=120).returncode == 0
+    except Exception:
+        return False
+
+def _install_deps():
     subprocess.run("pip install -q uv", shell=True, check=True)
     UV = "uv pip install --python /content/py311/bin/python"
     subprocess.run(UV + " torch==2.11.0 torchaudio==2.11.0", shell=True, check=True)
     subprocess.run(UV + " dots.tts huggingface_hub soundfile 'gradio>=6.17,<7' faster-whisper", shell=True, check=True)
-    print("✅ 环境安装完成", flush=True)
-    print("环境 Python：", subprocess.run([PY, "-c", "import sys;print(sys.version.split()[0])"],
-          capture_output=True, text=True).stdout.strip(), flush=True)
-    if DRIVE_OK:
-        print("📦 正在把环境打包缓存到 Drive（首次稍慢，约 2-4 分钟）...", flush=True)
-        subprocess.run(["tar", "czf", ENV_TARBALL, "-C", "/", "content/py311"], check=True)
-        print("✅ 环境已缓存到 Drive：", ENV_TARBALL, flush=True)
-    else:
-        print("⚠️ Drive 未挂载，本次环境未缓存（断连后需重装）", flush=True)
 
-if _py_ok(PY):
-    print("✅ 环境已就绪（免重装）", flush=True)
-elif DRIVE_OK and os.path.exists(ENV_TARBALL):
-    print("🔄 从 Drive 恢复环境（约 1-2 分钟，免重装依赖）...", flush=True)
-    subprocess.run(["tar", "xzf", ENV_TARBALL, "-C", "/"], check=True)
-    if _py_ok(PY):
-        print("✅ 环境恢复完成", flush=True)
-    else:
-        print("⚠️ 缓存环境损坏/不兼容，重新安装...", flush=True)
-        _build_env()
-else:
-    _build_env()
+# 1) 确保 python 解释器存在（恢复 / 新建）
+if not _py_runs(PY):
+    if DRIVE_OK and os.path.exists(ENV_TARBALL):
+        print("🔄 从 Drive 恢复环境（约 1-2 分钟，免重装）...", flush=True)
+        subprocess.run(["tar", "xzf", ENV_TARBALL, "-C", "/"], check=True)
+    if not _py_runs(PY):
+        print("🔄 首次安装环境（约 3-5 分钟）...", flush=True)
+        subprocess.run("python3 -m venv /content/py311", shell=True, check=True)
+
+# 2) 检查依赖是否齐全，缺哪个补哪个（uv 幂等，已装的秒过）
+if not _deps_ok(PY):
+    print("🔄 检测到依赖缺失，正在补齐（已装的会自动跳过）...", flush=True)
+    _install_deps()
+
+if not _deps_ok(PY):
+    _r = subprocess.run([PY, "-c", "import gradio"], capture_output=True, text=True)
+    print("❌ 依赖仍缺失：", _r.stderr[-800:], flush=True)
+    raise SystemExit("依赖安装失败，请检查上方报错后重跑本格")
+
+# 3) 环境齐了，首次打包缓存到 Drive（之后断连免重装）
+if DRIVE_OK and not os.path.exists(ENV_TARBALL):
+    print("📦 缓存环境到 Drive（首次稍慢，约 2-4 分钟）...", flush=True)
+    subprocess.run(["tar", "czf", ENV_TARBALL, "-C", "/", "content/py311"], check=True)
+    print("✅ 环境已缓存：", ENV_TARBALL, flush=True)
+
+print("✅ 环境就绪（含 gradio / torch / dots.tts / faster-whisper）", flush=True)
 '''
 
 # ============================================================
@@ -218,7 +230,8 @@ cells.append(code(STEP_MOUNT))
 cells.append(md("""## 第 2 步：准备环境（首次安装 / 之后秒恢复）
 
 - **第一次**：安装全部依赖（约 3-5 分钟），然后**打包缓存到 Drive**。
-- **之后每次**：直接从 Drive 解包恢复（约 1-2 分钟），**不再重装**。"""))
+- **之后每次**：直接从 Drive 解包恢复（约 1-2 分钟），**不再重装**。
+- **自愈**：每次都会校验 gradio / torch / dots.tts 等依赖是否齐全，**缺哪个自动补哪个**（不会出现「环境在但缺包」的情况）。"""))
 
 cells.append(code(STEP_ENV))
 
