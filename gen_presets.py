@@ -1,88 +1,71 @@
 #!/usr/bin/env python3
-# 生成 dots.tts 面板的内置音色预设参考音频（macOS `say` 生成）
-# 用法：python3 gen_presets.py
-# 输出：presets/*.wav（48kHz 单声道 16bit）
-import subprocess, os
+# 管理内置音色预设的参考音频（自然真人录音）
+#
+# 重要说明：
+#   dots.tts 是「零样本声音克隆」模型，官方（studio-dots-ai/dots.tts）不提供任何内置音色，
+#   HF 模型仓库里也没有示例人声文件（只有模型权重）。所以「音色预设」必须自己准备参考音频。
+#
+#   参考音频质量直接决定克隆效果：
+#   ✅ 用「干净的自然人声录音」（3-10 秒、单一人声、无背景噪音/音乐）→ 克隆自然
+#   ❌ 用机器合成的声音（如 macOS `say`、其它 TTS 输出）→ 韵律扁平、克隆出来很机械
+#
+# 本脚本内置的 3 个音色取自开源项目的人声示例（自然真人录音），来源与许可：
+#   f5_zh.wav    F5-TTS（MIT 许可）     src/f5_tts/infer/examples/basic/basic_ref_zh.wav
+#   cosy_zh.wav  CosyVoice（Apache-2.0） asset/zero_shot_prompt.wav
+#   f5_en.wav    F5-TTS（MIT 许可）     src/f5_tts/infer/examples/basic/basic_ref_en.wav
+#
+# 用法：
+#   1) python3 gen_presets.py            # 重新下载内置 3 个自然音色
+#   2) 自己加音色：把任意干净人声 wav 放进 presets/，然后在 panel_src.py 的
+#      PRESET_DEFS 里加一行 (key, 标签, 文件名, 参考文字)，重新跑 gen_dots_tts_panel.py 即可。
+import os, urllib.request, subprocess
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(BASE, "presets")
 os.makedirs(OUT, exist_ok=True)
 
-# (key, say 语音名, 参考文本, 显示标签)
+# (文件名, 下载地址, 参考文字, 显示标签)
 PRESETS = [
-    # ---- 中文 ----
-    ("tingting", "Tingting",
-     "大家好，我是你的专属语音助手。今天天气很不错，我们一起来聊一聊最近发生的趣事吧。",
-     "婷婷（温柔女声）"),
-    ("eddy", "Eddy (中文（中国大陆）)",
-     "各位听众朋友，大家好。欢迎收听今天的节目，希望你能喜欢我的声音，也祝你度过愉快的一天。",
-     "埃迪（沉稳男声）"),
-    ("meijia", "Meijia",
-     "你好呀，很高兴认识你。今天想跟你分享一些有趣的事情，希望你听了以后会开心一点。",
-     "美佳（甜美女声）"),
-    ("sandy", "Sandy (中文（中国大陆）)",
-     "大家好，我是你的语音助手。无论是工作还是生活，我都愿意随时为你提供帮助和建议。",
-     "桑迪（知性女声）"),
-
-    # ---- 英语 ----
-    ("samantha", "Samantha",
-     "Hello, I'm your friendly voice assistant. It's a pleasure to meet you, and I'm here to help with whatever you need today.",
-     "Samantha（美式女声）"),
-    ("daniel", "Daniel",
-     "Good day to you, and welcome. I hope you find my voice clear, natural, and pleasant to listen to.",
-     "Daniel（英式男声）"),
-    ("karen", "Karen",
-     "G'day, I'm your voice assistant. Let's get started and make the most of today, together.",
-     "Karen（澳洲女声）"),
-    ("moira", "Moira",
-     "Hello there, lovely to meet you. I'll be guiding you through today, so just relax and enjoy the conversation.",
-     "Moira（爱尔兰女声）"),
-
-    # ---- 其他语言 ----
-    ("kyoko", "Kyoko",
-     "こんにちは、あなたの音声アシスタントです。今日もよろしくお願いします。",
-     "Kyoko（日语女声）"),
-    ("yuna", "Yuna",
-     "안녕하세요, 저는 당신의 음성 비서입니다. 오늘도 좋은 하루 보내세요.",
-     "Yuna（韩语女声）"),
-    ("thomas", "Thomas",
-     "Bonjour, je suis votre assistant vocal. C'est un plaisir de vous accompagner aujourd'hui.",
-     "Thomas（法语男声）"),
-    ("anna", "Anna",
-     "Hallo, ich bin deine Sprachassistentin. Schön, dich heute begleiten zu dürfen.",
-     "Anna（德语女声）"),
-
-    # ---- 情绪参考（英语，用于把情绪/语气转移到合成结果） ----
-    ("goodnews", "Good News",
-     "Great news! Everything went perfectly today!",
-     "开心·欢快（情绪参考）"),
-    ("badnews", "Bad News",
-     "I'm afraid I have some difficult news to share with you.",
-     "悲伤·低沉（情绪参考）"),
-    ("whisper", "Whisper",
-     "Psst, come a little closer. I have a secret to tell you, but just between us, quietly.",
-     "悄悄话·耳语（情绪参考）"),
+    ("f5_zh.wav",
+     "https://raw.githubusercontent.com/SWivid/F5-TTS/main/src/f5_tts/infer/examples/basic/basic_ref_zh.wav",
+     "对，这就是我万人敬仰的太乙真人。",
+     "普通话·自然女声①"),
+    ("cosy_zh.wav",
+     "https://raw.githubusercontent.com/FunAudioLLM/CosyVoice/main/asset/zero_shot_prompt.wav",
+     "希望你以后能够做的比我还好呦。",
+     "普通话·自然女声②"),
+    ("f5_en.wav",
+     "https://raw.githubusercontent.com/SWivid/F5-TTS/main/src/f5_tts/infer/examples/basic/basic_ref_en.wav",
+     "Some call me nature, others call me mother nature.",
+     "英语·自然女声"),
 ]
+
+
+def to_wav_16k_mono(src, dst):
+    """统一转成 16kHz 单声道 WAV（可选，用 ffmpeg 或 macOS afconvert）。
+    dots.tts 内部会重采样，所以非必须，但统一格式更稳。"""
+    if os.path.exists(src):
+        subprocess.run(["afconvert", "-f", "WAVE", "-d", "LEI16@16000", "-c", "1", src, dst],
+                       capture_output=True)
 
 
 def main():
     ok = 0
-    for key, voice, text, label in PRESETS:
-        aiff = f"/tmp/{key}.aiff"
-        wav = os.path.join(OUT, key + ".wav")
-        r = subprocess.run(["say", "-v", voice, "-o", aiff, text],
-                           capture_output=True, text=True)
-        if r.returncode != 0:
-            print(f"❌ say 失败 [{key}] {voice}: {r.stderr.strip()}")
+    for fname, url, text, label in PRESETS:
+        dst = os.path.join(OUT, fname)
+        if os.path.exists(dst) and os.path.getsize(dst) > 1000:
+            print(f"✅ 已存在 {fname:<14} {label}")
+            ok += 1
             continue
-        r2 = subprocess.run(["afconvert", "-f", "WAVE", "-d", "LEI16@48000", aiff, wav],
-                            capture_output=True, text=True)
-        if r2.returncode != 0:
-            print(f"❌ 转换失败 [{key}]: {r2.stderr.strip()}")
-            continue
-        ok += 1
-        print(f"✅ {key:<10} {os.path.getsize(wav)/1024:6.1f} KB  {label}")
+        try:
+            urllib.request.urlretrieve(url, dst)
+            print(f"✅ 下载 {fname:<14} {label}  <- {url}")
+            ok += 1
+        except Exception as e:
+            print(f"❌ 下载失败 {fname}: {e}")
+
     print(f"\n完成：{ok}/{len(PRESETS)}")
+    print("提示：想加更多音色，把干净人声 wav 放进 presets/ 并更新 panel_src.py 的 PRESET_DEFS。")
 
 
 if __name__ == "__main__":

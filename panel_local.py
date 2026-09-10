@@ -35,21 +35,11 @@ print("模型加载完成", flush=True)
 # ---------- 内置音色预设（本地仓库自带 presets/，缺失时从 GitHub 下载） ----------
 # 每项：(key, 标签, 文件名, 参考文本)。参考文本必须与音频实际内容一致。
 PRESET_DEFS = [
-    ("tingting", "婷婷（温柔女声）", "tingting.wav", "大家好，我是你的专属语音助手。今天天气很不错，我们一起来聊一聊最近发生的趣事吧。"),
-    ("eddy", "埃迪（沉稳男声）", "eddy.wav", "各位听众朋友，大家好。欢迎收听今天的节目，希望你能喜欢我的声音，也祝你度过愉快的一天。"),
-    ("meijia", "美佳（甜美女声）", "meijia.wav", "你好呀，很高兴认识你。今天想跟你分享一些有趣的事情，希望你听了以后会开心一点。"),
-    ("sandy", "桑迪（知性女声）", "sandy.wav", "大家好，我是你的语音助手。无论是工作还是生活，我都愿意随时为你提供帮助和建议。"),
-    ("samantha", "Samantha（美式女声）", "samantha.wav", "Hello, I'm your friendly voice assistant. It's a pleasure to meet you, and I'm here to help with whatever you need today."),
-    ("daniel", "Daniel（英式男声）", "daniel.wav", "Good day to you, and welcome. I hope you find my voice clear, natural, and pleasant to listen to."),
-    ("karen", "Karen（澳洲女声）", "karen.wav", "G'day, I'm your voice assistant. Let's get started and make the most of today, together."),
-    ("moira", "Moira（爱尔兰女声）", "moira.wav", "Hello there, lovely to meet you. I'll be guiding you through today, so just relax and enjoy the conversation."),
-    ("kyoko", "Kyoko（日语女声）", "kyoko.wav", "こんにちは、あなたの音声アシスタントです。今日もよろしくお願いします。"),
-    ("yuna", "Yuna（韩语女声）", "yuna.wav", "안녕하세요, 저는 당신의 음성 비서입니다. 오늘도 좋은 하루 보내세요."),
-    ("thomas", "Thomas（法语男声）", "thomas.wav", "Bonjour, je suis votre assistant vocal. C'est un plaisir de vous accompagner aujourd'hui."),
-    ("anna", "Anna（德语女声）", "anna.wav", "Hallo, ich bin deine Sprachassistentin. Schön, dich heute begleiten zu dürfen."),
-    ("goodnews", "开心·欢快（情绪参考）", "goodnews.wav", "Great news! Everything went perfectly today!"),
-    ("badnews", "悲伤·低沉（情绪参考）", "badnews.wav", "I'm afraid I have some difficult news to share with you."),
-    ("whisper", "悄悄话·耳语（情绪参考）", "whisper.wav", "Psst, come a little closer. I have a secret to tell you, but just between us, quietly."),
+    # ---- 普通话：自然真人录音（来自开源项目 F5-TTS / CosyVoice，MIT / Apache-2.0 许可）----
+    ("f5_zh", "普通话·自然女声①", "f5_zh.wav", "对，这就是我万人敬仰的太乙真人。"),
+    ("cosy_zh", "普通话·自然女声②", "cosy_zh.wav", "希望你以后能够做的比我还好呦。"),
+    # ---- 英语：自然真人录音（F5-TTS）----
+    ("f5_en", "英语·自然女声", "f5_en.wav", "Some call me nature, others call me mother nature."),
 ]
 PRESET_BASE = "https://raw.githubusercontent.com/Evan78s/dots-tts-panel/main/presets"
 
@@ -74,40 +64,125 @@ def _ensure_presets():
 _ensure_presets()
 print("内置音色预设：", list(PRESET_LABELS.values()), flush=True)
 
-PRESET_CHOICES = [("默认音色（不克隆）", "")] + [(lbl, key) for key, lbl in PRESET_LABELS.items()]
+# ---------- 统一「选择音色」下拉：内置预设 + 我的音色合并，选起来最省心 ----------
+def build_voice_choices():
+    choices = [("🎤 默认音色（不克隆）", "")]
+    for key, lbl in PRESET_LABELS.items():
+        choices.append(("内置 · " + lbl, "preset:" + key))
+    for name in load_library():
+        choices.append(("我的 · " + name, "lib:" + name))
+    return choices
 
 # ---------- 语言（全部中文显示） ----------
 LANG_CHOICES = [
     ("自动检测", "auto_detect"),
-    ("中文（普通话）", "ZH"),
+    ("普通话", "ZH"),
+    ("粤语", "口音:粤语"),
+    ("北京话", "口音:北京官话"),
+    ("东北话", "口音:东北话"),
+    ("四川话", "口音:四川话"),
+    ("闽南话", "口音:闽南话"),
+    ("吴语", "口音:吴语"),
     ("英语", "EN"),
-    ("粤语", "Cantonese"),
+    ("西班牙语", "ES"),
+    ("印地语", "HI"),
+    ("阿拉伯语", "AR"),
+    ("孟加拉语", "BN"),
+    ("葡萄牙语", "PT"),
+    ("俄语", "RU"),
     ("日语", "JA"),
-    ("韩语", "KO"),
     ("法语", "FR"),
     ("德语", "DE"),
-    ("西班牙语", "ES"),
-    ("俄语", "RU"),
-    ("阿拉伯语", "AR"),
-    ("印地语", "HI"),
-    ("葡萄牙语", "PT"),
+    ("韩语", "KO"),
     ("意大利语", "IT"),
-    ("泰语", "TH"),
+    ("土耳其语", "TR"),
     ("越南语", "VI"),
     ("印尼语", "ID"),
-    ("捷克语", "CS"),
-    ("荷兰语", "NL"),
-    ("芬兰语", "FI"),
-    ("希腊语", "EL"),
+    ("乌尔都语", "UR"),
+    ("波斯语", "FA"),
+    ("泰米尔语", "TA"),
+    ("泰卢固语", "TE"),
+    ("菲律宾语", "FIL"),
+    ("马来语", "MS"),
+    ("旁遮普语", "PA"),
+    ("马拉地语", "MR"),
+    ("古吉拉特语", "GU"),
+    ("马拉雅拉姆语", "ML"),
+    ("卡纳达语", "KN"),
     ("波兰语", "PL"),
-    ("罗马尼亚语", "RO"),
-    ("土耳其语", "TR"),
     ("乌克兰语", "UK"),
-    ("口音：北京官话", "口音:北京官话"),
-    ("口音：东北话", "口音:东北话"),
-    ("口音：四川话", "口音:四川话"),
-    ("口音：闽南话", "口音:闽南话"),
-    ("口音：吴语", "口音:吴语"),
+    ("荷兰语", "NL"),
+    ("泰语", "TH"),
+    ("罗马尼亚语", "RO"),
+    ("斯瓦希里语", "SW"),
+    ("希伯来语", "HE"),
+    ("捷克语", "CS"),
+    ("希腊语", "EL"),
+    ("匈牙利语", "HU"),
+    ("瑞典语", "SV"),
+    ("丹麦语", "DA"),
+    ("芬兰语", "FI"),
+    ("书面挪威语", "NB"),
+    ("斯洛伐克语", "SK"),
+    ("斯洛文尼亚语", "SL"),
+    ("塞尔维亚语", "SR"),
+    ("波斯尼亚语", "BS"),
+    ("克罗地亚语", "HR"),
+    ("保加利亚语", "BG"),
+    ("马其顿语", "MK"),
+    ("立陶宛语", "LT"),
+    ("拉脱维亚语", "LV"),
+    ("爱沙尼亚语", "ET"),
+    ("冰岛语", "IS"),
+    ("爱尔兰语", "GA"),
+    ("威尔士语", "CY"),
+    ("加泰罗尼亚语", "CA"),
+    ("加利西亚语", "GL"),
+    ("奥克语", "OC"),
+    ("阿斯图里亚斯语", "AST"),
+    ("尼泊尔语", "NE"),
+    ("信德语", "SD"),
+    ("奥里亚语", "OR"),
+    ("阿萨姆语", "AS"),
+    ("普什图语", "PS"),
+    ("缅甸语", "MY"),
+    ("高棉语", "KM"),
+    ("老挝语", "LO"),
+    ("哈萨克语", "KK"),
+    ("乌兹别克语", "UZ"),
+    ("吉尔吉斯语", "KY"),
+    ("塔吉克语", "TG"),
+    ("阿塞拜疆语", "AZ"),
+    ("格鲁吉亚语", "KA"),
+    ("亚美尼亚语", "HY"),
+    ("白俄罗斯语", "BE"),
+    ("卢森堡语", "LB"),
+    ("马耳他语", "MT"),
+    ("毛利语", "MI"),
+    ("南非荷兰语", "AF"),
+    ("祖鲁语", "ZU"),
+    ("科萨语", "XH"),
+    ("约鲁巴语", "YO"),
+    ("豪萨语", "HA"),
+    ("伊博语", "IG"),
+    ("阿姆哈拉语", "AM"),
+    ("奥罗莫语", "OM"),
+    ("北索托语", "NSO"),
+    ("尼扬贾语", "NY"),
+    ("修纳语", "SN"),
+    ("索马里语", "SO"),
+    ("卢干达语", "LG"),
+    ("林加拉语", "LN"),
+    ("卢奥语", "LUO"),
+    ("坎巴语", "KAM"),
+    ("翁本杜语", "UMB"),
+    ("富拉语", "FF"),
+    ("沃洛夫语", "WO"),
+    ("中库尔德语", "CKB"),
+    ("宿务语", "CEB"),
+    ("佛得角克里奥尔语", "KEA"),
+    ("蒙古语", "MN"),
+    ("爪哇语", "JV"),
 ]
 
 # ---------- 音色库（持久化到本地） ----------
@@ -149,7 +224,7 @@ def do_transcribe(ref_audio):
 # ---------- 音色库操作 ----------
 def do_save_voice(name, ref_audio, ref_text):
     if not name or not name.strip():
-        raise gr.Error("请先填写音色名称。")
+        raise gr.Error("请先给音色起个名字。")
     if not ref_audio:
         raise gr.Error("请先上传参考音频。")
     name = name.strip()
@@ -159,53 +234,67 @@ def do_save_voice(name, ref_audio, ref_text):
     shutil.copy(ref_audio, dst)
     lib[name] = {"file": os.path.basename(dst), "prompt_text": (ref_text or "").strip()}
     save_library(lib)
-    choices = list(lib.keys())
-    return gr.update(choices=choices, value=name), "✅ 已保存音色「%s」到音色库（共 %d 个）。" % (name, len(choices))
+    return (gr.update(choices=build_voice_choices(), value="lib:" + name),
+            "✅ 已保存「%s」。以后在「选择音色」里直接选它即可（现在共 %d 个我的音色）。" % (name, len(lib)))
 
-def do_delete_voice(lib_voice):
+def do_delete_voice(voice_dd):
+    if not voice_dd or not voice_dd.startswith("lib:"):
+        return gr.update(choices=build_voice_choices()), "⚠️ 只能删除「我的 · xxx」里的音色（先在上方选中它）。"
+    name = voice_dd[len("lib:"):]
     lib = load_library()
-    if lib_voice in lib:
-        _f = lib.pop(lib_voice)
+    if name in lib:
+        _f = lib.pop(name)
         try:
             os.remove(os.path.join(LIB_DIR, _f["file"]))
         except Exception:
             pass
         save_library(lib)
-    choices = list(lib.keys())
-    return gr.update(choices=choices, value=None), "已删除音色「%s」。" % lib_voice
+    return gr.update(choices=build_voice_choices(), value=""), "已删除「%s」。" % name
 
-def preview_preset(preset):
-    if not preset:
+def preview_voice(voice_dd):
+    if not voice_dd:
         return None, "默认音色无需试听，直接合成即可。"
-    path = os.path.join(PRESET_DIR, preset + ".wav")
+    if voice_dd.startswith("preset:"):
+        key = voice_dd[len("preset:"):]
+        path = os.path.join(PRESET_DIR, key + ".wav")
+        label = PRESET_LABELS.get(key, key)
+    elif voice_dd.startswith("lib:"):
+        name = voice_dd[len("lib:"):]
+        _e = load_library().get(name)
+        if not _e:
+            return None, "⚠️ 该音色不存在（可能已被删除）。"
+        path = os.path.join(LIB_DIR, _e["file"])
+        label = name
+    else:
+        return None, "未知音色。"
     if not os.path.exists(path):
-        return None, "⚠️ 预设音频不存在。"
+        return None, "⚠️ 音频文件不存在：" + path
     data, sr = sf.read(path)
-    return (sr, data), "试听预设音色：%s" % PRESET_LABELS.get(preset, preset)
+    return (sr, data), "试听：%s" % label
 
 # ---------- 合成 ----------
-def synth(source, preset, ref_audio, ref_text, lib_voice, synth_text, synth_lang, speaker_scale,
+def synth(voice_dd, ref_audio, ref_text, synth_text, synth_lang, speaker_scale,
           seed=0, num_steps=10, guidance_scale=1.2, normalize_text=False):
     prompt_path = None
     prompt_text = None
     info = []
-    if source == "音色预设":
-        if preset:
-            prompt_path = os.path.join(PRESET_DIR, preset + ".wav")
-            prompt_text = PRESET_TEXTS.get(preset, "")
-            info.append("音色预设：" + PRESET_LABELS.get(preset, preset))
-    elif source == "上传参考音频":
-        if ref_audio:
-            prompt_path = ref_audio
-            prompt_text = (ref_text or "").strip() or None
-            info.append("音色：上传参考音频")
-    else:
-        if lib_voice:
-            _e = load_library().get(lib_voice)
-            if _e:
-                prompt_path = os.path.join(LIB_DIR, _e["file"])
-                prompt_text = _e.get("prompt_text") or None
-                info.append("音色库：" + lib_voice)
+    if voice_dd and voice_dd.startswith("preset:"):
+        key = voice_dd[len("preset:"):]
+        prompt_path = os.path.join(PRESET_DIR, key + ".wav")
+        prompt_text = PRESET_TEXTS.get(key, "")
+        info.append("音色：" + PRESET_LABELS.get(key, key))
+    elif voice_dd and voice_dd.startswith("lib:"):
+        name = voice_dd[len("lib:"):]
+        _e = load_library().get(name)
+        if _e:
+            prompt_path = os.path.join(LIB_DIR, _e["file"])
+            prompt_text = _e.get("prompt_text") or None
+            info.append("音色：" + name)
+    elif ref_audio:
+        # 没选音色但上传了参考音频 -> 直接用刚上传的（一次性克隆，无需保存）
+        prompt_path = ref_audio
+        prompt_text = (ref_text or "").strip() or None
+        info.append("音色：刚上传的参考音频")
     if not synth_text or not synth_text.strip():
         raise gr.Error("请先输入要合成的文字。")
     lang = synth_lang or "auto_detect"
@@ -228,30 +317,13 @@ def synth(source, preset, ref_audio, ref_text, lib_voice, synth_text, synth_lang
         info.append("未用参考音色（模型默认声音）")
     return (sr, audio), " · ".join(info)
 
-# ---------- 音色来源切换 ----------
-def on_source_change(src):
-    if src == "音色预设":
-        return (gr.update(visible=True), gr.update(visible=True), gr.update(visible=True),
-                gr.update(visible=False), gr.update(visible=False), gr.update(visible=False),
-                gr.update(visible=False), gr.update(visible=False), gr.update(visible=False),
-                gr.update(visible=False))
-    if src == "上传参考音频":
-        return (gr.update(visible=False), gr.update(visible=False), gr.update(visible=False),
-                gr.update(visible=True), gr.update(visible=True), gr.update(visible=True),
-                gr.update(visible=True), gr.update(visible=True), gr.update(visible=False),
-                gr.update(visible=False))
-    return (gr.update(visible=False), gr.update(visible=False), gr.update(visible=False),
-            gr.update(visible=False), gr.update(visible=False), gr.update(visible=False),
-            gr.update(visible=False), gr.update(visible=False), gr.update(visible=True),
-            gr.update(visible=True))
-
 # ---------- 顶部 Banner ----------
 BILIBILI_URL = "https://space.bilibili.com/380877309"
 DAOYAKE_URL = "https://www.daoyanke.cn"
 _BANNER_HTML = (
     '<div style="text-align:center;padding:20px 14px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:14px;margin-bottom:14px;">'
     '<h1 style="color:#fff;margin:0 0 6px;font-size:28px;">🎙️ dots.tts 语音合成面板</h1>'
-    '<p style="color:#eaeaff;margin:0 0 14px;font-size:15px;">输入文字 → 选音色（预设 / 上传克隆 / 音色库）→ 选语言 → 一键合成<br>支持声音克隆 · 20+ 语言 · 中文方言口音</p>'
+    '<p style="color:#eaeaff;margin:0 0 14px;font-size:15px;">输入文字 → 选音色（内置 / 我的音色 / 直接上传）→ 选语言 → 一键合成<br>支持声音克隆 · 100+ 语言 · 中文方言口音</p>'
     '<p style="margin:0;">'
     '<a href="' + BILIBILI_URL + '" target="_blank" rel="noopener" style="display:inline-block;color:#fff;background:rgba(255,255,255,0.22);padding:5px 16px;border-radius:18px;text-decoration:none;margin:0 6px;font-weight:600;">📺 B站</a>'
     '<a href="' + DAOYAKE_URL + '" target="_blank" rel="noopener" style="display:inline-block;color:#fff;background:rgba(255,255,255,0.22);padding:5px 16px;border-radius:18px;text-decoration:none;margin:0 6px;font-weight:600;">🎬 导演课</a>'
@@ -264,21 +336,23 @@ with gr.Blocks(title="dots.tts 语音合成面板") as demo:
 
     with gr.Row():
         with gr.Column(scale=1):
-            gr.Markdown("## ① 音色设置")
-            source = gr.Radio(["音色预设", "上传参考音频", "音色库"], value="音色预设", label="音色来源")
-            preset_dd = gr.Dropdown(PRESET_CHOICES, value="", label="音色预设")
-            preview_btn = gr.Button("试听预设音色")
-            gr.Markdown("💡 **调情绪/语气**：情绪来自参考音频的韵律——选「情绪参考」预设，或上传带目标情绪的人声（3-10 秒）；再用下方「音色种子」换韵律。")
-            preview_audio = gr.Audio(label="预设试听")
-            ref_audio = gr.Audio(label="参考音频（3-10 秒清晰人声）", type="filepath", visible=False)
-            transcribe_btn = gr.Button("识别转写", visible=False)
-            ref_text = gr.Textbox(label="参考音频文字（自动识别，可手动更正）", lines=3, visible=False,
-                                  placeholder="上传音频后点「识别转写」自动填写；也可直接手填。文字越准，克隆越像。")
-            voice_name = gr.Textbox(label="音色名称（保存到音色库）", visible=False, placeholder="例如：我的声音")
-            save_btn = gr.Button("保存到音色库", visible=False)
-            lib_dd = gr.Dropdown(choices=list(load_library().keys()), value=None,
-                                 label="音色库（已保存的音色）", visible=False)
-            delete_btn = gr.Button("删除选中音色", visible=False)
+            gr.Markdown("## ① 选择音色")
+            voice_dd = gr.Dropdown(build_voice_choices(), value="", label="选择音色",
+                                   info="内置音色 + 你保存的「我的音色」都在这一个下拉里")
+            with gr.Row():
+                preview_btn = gr.Button("试听选中音色")
+                delete_btn = gr.Button("删除选中的「我的音色」")
+            preview_audio = gr.Audio(label="试听")
+
+            gr.Markdown("## ➕ 添加我的音色（傻瓜三步）")
+            gr.Markdown("上传一段 **3-10 秒的清晰人声**（无背景噪音、单一说话人），会自动识别文字；核对后起个名字保存，以后在「选择音色」里直接选。")
+            ref_audio = gr.Audio(label="① 上传参考音频", type="filepath")
+            ref_text = gr.Textbox(label="② 参考音频文字（自动识别，可手动更正）", lines=3,
+                                  placeholder="上传后自动识别填写；文字越准，克隆越像。")
+            with gr.Row():
+                transcribe_btn = gr.Button("重新识别文字")
+                voice_name = gr.Textbox(label="③ 给它起个名字", placeholder="例如：我的声音")
+            save_btn = gr.Button("💾 保存为我的音色", variant="primary")
             voice_status = gr.Textbox(label="提示", interactive=False)
 
         with gr.Column(scale=1):
@@ -299,14 +373,13 @@ with gr.Blocks(title="dots.tts 语音合成面板") as demo:
             result_audio = gr.Audio(label="合成结果")
             result_info = gr.Textbox(label="结果信息", interactive=False)
 
-    _voice_components = [preset_dd, preview_btn, preview_audio, ref_audio, transcribe_btn,
-                         ref_text, voice_name, save_btn, lib_dd, delete_btn]
-    source.change(on_source_change, source, _voice_components)
-    preview_btn.click(preview_preset, preset_dd, [preview_audio, voice_status])
+    # 上传音频后自动识别转写文字（无需手动点按钮）
+    ref_audio.change(do_transcribe, ref_audio, [ref_text, voice_status])
     transcribe_btn.click(do_transcribe, ref_audio, [ref_text, voice_status])
-    save_btn.click(do_save_voice, [voice_name, ref_audio, ref_text], [lib_dd, voice_status])
-    delete_btn.click(do_delete_voice, lib_dd, [lib_dd, voice_status])
-    synth_btn.click(synth, [source, preset_dd, ref_audio, ref_text, lib_dd, synth_text, synth_lang,
+    preview_btn.click(preview_voice, voice_dd, [preview_audio, voice_status])
+    save_btn.click(do_save_voice, [voice_name, ref_audio, ref_text], [voice_dd, voice_status])
+    delete_btn.click(do_delete_voice, voice_dd, [voice_dd, voice_status])
+    synth_btn.click(synth, [voice_dd, ref_audio, ref_text, synth_text, synth_lang,
                             speaker_scale, seed, num_steps, guidance_scale, normalize_text],
                     [result_audio, result_info])
 
