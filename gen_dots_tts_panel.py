@@ -5,7 +5,7 @@
 #   2) 模型复制到本地 SSD（加载快，不用每次从 Drive 慢读 5GB）
 #   3) 启动前先杀旧进程 + 智能等待地址（20 分钟 + 检测进程退出）
 #   4) 代码块拆分：挂载 / 环境 / 模型 / 启动 + 一键启动
-import json, os
+import json, os, base64
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 # 兼容两种布局：平铺（仓库根）或 dots-tts-panel/ 子目录（本地开发）
@@ -24,6 +24,7 @@ def code(text):
 
 # ---- 读取面板脚本 ----
 panel_code = open(PANEL_SRC, encoding="utf-8").read()
+PANEL_CODE_B64 = base64.b64encode(panel_code.encode("utf-8")).decode("ascii")
 
 # ============================================================
 # 第 1 步：挂载 Drive + 定义路径
@@ -110,7 +111,8 @@ print("✅ 环境就绪（含 gradio / torch / dots.tts / faster-whisper）", fl
 STEP_PREP = '''# ---- 第 3 步：准备模型（复制到本地 SSD，加载快）+ 写面板代码 ----
 import os, subprocess
 
-panel_code = r"""__PANEL_CODE__"""
+import base64
+panel_code = base64.b64decode("__PANEL_CODE_B64__").decode("utf-8")
 open("/content/panel.py", "w", encoding="utf-8").write(panel_code)
 print("✅ 面板代码已写入 /content/panel.py", flush=True)
 
@@ -241,7 +243,7 @@ cells.append(md("""## 第 3 步：准备模型 + 写面板代码
 
 > 首次运行时 Drive 还没有模型，会直接下载到 Drive。"""))
 
-cells.append(code(STEP_PREP.replace("__PANEL_CODE__", panel_code)))
+cells.append(code(STEP_PREP.replace("__PANEL_CODE_B64__", PANEL_CODE_B64)))
 
 cells.append(md("""## 第 4 步：启动面板 + 等待公网地址
 
@@ -253,7 +255,7 @@ cells.append(md("""## 🚀 一键启动（断连后 / 以后每次只跑这一�
 
 这一格 = 第 1 + 2 + 3 + 4 步的合体。**首次安装完成后，以后每次（含断连重开）只跑这一格就行**，约 2-4 分钟出地址。"""))
 
-cells.append(code(STEP_ALL.replace("__PANEL_CODE__", panel_code)))
+cells.append(code(STEP_ALL.replace("__PANEL_CODE_B64__", PANEL_CODE_B64)))
 
 cells.append(md("""## ❓ 常见问题
 

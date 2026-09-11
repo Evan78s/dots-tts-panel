@@ -222,6 +222,17 @@ def do_transcribe(ref_audio):
         return "", "⚠️ 识别失败：" + str(e) + "（可手动填写参考音频说了什么）"
 
 # ---------- 音色库操作 ----------
+def _save_as_wav(src, dst):
+    """把任意音频（wav/mp3/m4a/flac 等）转成 16kHz 单声道 WAV 写入 dst。成功返回 True。"""
+    try:
+        import librosa
+        y, _sr = librosa.load(src, sr=16000, mono=True)
+        sf.write(dst, y, 16000)
+        return True
+    except Exception as e:
+        print("⚠️ 转 WAV 失败，退回直接复制：%s" % e, flush=True)
+        return False
+
 def do_save_voice(name, ref_audio, ref_text):
     if not name or not name.strip():
         raise gr.Error("请先给音色起个名字。")
@@ -229,13 +240,29 @@ def do_save_voice(name, ref_audio, ref_text):
         raise gr.Error("请先上传参考音频。")
     name = name.strip()
     lib = load_library()
-    ext = os.path.splitext(ref_audio)[1].lower() or ".wav"
-    dst = os.path.join(LIB_DIR, "%02d_%d%s" % (len(lib) + 1, int(time.time()), ext))
-    shutil.copy(ref_audio, dst)
+    base = "%02d_%d" % (len(lib) + 1, int(time.time()))
+    dst = os.path.join(LIB_DIR, base + ".wav")
+    if not _save_as_wav(ref_audio, dst):
+        # 兜底：librosa 也读不了，直接复制原文件并保留原扩展名
+        ext = os.path.splitext(ref_audio)[1].lower() or ".wav"
+        dst = os.path.join(LIB_DIR, base + ext)
+        shutil.copy(ref_audio, dst)
+    # 校验保存的文件确实可读、非空
+    try:
+        import librosa
+        _y, _sr = librosa.load(dst, sr=None, mono=True)
+        if _y.size == 0:
+            raise ValueError("音频为空")
+    except Exception as e:
+        try:
+            os.remove(dst)
+        except Exception:
+            pass
+        raise gr.Error("保存失败：音频无法读取（%s）。请上传 wav/mp3/m4a 格式的清晰人声。" % e)
     lib[name] = {"file": os.path.basename(dst), "prompt_text": (ref_text or "").strip()}
     save_library(lib)
     return (gr.update(choices=build_voice_choices(), value="lib:" + name),
-            "✅ 已保存「%s」。以后在「选择音色」里直接选它即可（现在共 %d 个我的音色）。" % (name, len(lib)))
+            "✅ 已保存「%s」（已转为 16kHz WAV）。以后在「选择音色」里直接选它即可（现在共 %d 个我的音色）。" % (name, len(lib)))
 
 def do_delete_voice(voice_dd):
     if not voice_dd or not voice_dd.startswith("lib:"):
@@ -250,6 +277,16 @@ def do_delete_voice(voice_dd):
             pass
         save_library(lib)
     return gr.update(choices=build_voice_choices(), value=""), "已删除「%s」。" % name
+
+def _read_audio(path):
+    """读音频返回 (sr, data)。优先 soundfile（快），失败退回 librosa（兼容 mp3/m4a）。"""
+    try:
+        data, sr = sf.read(path)
+        return sr, data
+    except Exception:
+        import librosa
+        y, sr = librosa.load(path, sr=None, mono=True)
+        return sr, y
 
 def preview_voice(voice_dd):
     if not voice_dd:
@@ -269,7 +306,12 @@ def preview_voice(voice_dd):
         return None, "未知音色。"
     if not os.path.exists(path):
         return None, "⚠️ 音频文件不存在：" + path
-    data, sr = sf.read(path)
+    try:
+        sr, data = _read_audio(path)
+    except Exception as e:
+        return None, "⚠️ 无法读取音频：" + str(e)
+    if getattr(data, "size", 0) == 0:
+        return None, "⚠️ 音频内容为空。"
     return (sr, data), "试听：%s" % label
 
 # ---------- 合成 ----------
@@ -297,15 +339,20 @@ def synth(voice_dd, ref_audio, ref_text, synth_text, synth_lang, speaker_scale,
         info.append("音色：刚上传的参考音频")
     if not synth_text or not synth_text.strip():
         raise gr.Error("请先输入要合成的文字。")
+    if prompt_path and not os.path.exists(prompt_path):
+        raise gr.Error("⚠️ 音色音频文件不存在，请重新保存或换个音色。")
     lang = synth_lang or "auto_detect"
     if seed and int(seed) > 0:
         seed_everything(int(seed))
         info.append("音色种子 %d" % int(seed))
-    res = runtime.generate(text=synth_text.strip(), language=lang,
-                           prompt_audio_path=prompt_path, prompt_text=prompt_text,
-                           speaker_scale=speaker_scale,
-                           num_steps=int(num_steps), guidance_scale=float(guidance_scale),
-                           normalize_text=bool(normalize_text))
+    try:
+        res = runtime.generate(text=synth_text.strip(), language=lang,
+                               prompt_audio_path=prompt_path, prompt_text=prompt_text,
+                               speaker_scale=speaker_scale,
+                               num_steps=int(num_steps), guidance_scale=float(guidance_scale),
+                               normalize_text=bool(normalize_text))
+    except Exception as e:
+        raise gr.Error("合成失败：" + str(e))
     audio = res["audio"].float().cpu().squeeze().numpy()
     sr = res["sample_rate"]
     dur = round(len(audio) / sr, 2)
