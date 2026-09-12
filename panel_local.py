@@ -35,11 +35,18 @@ print("模型加载完成", flush=True)
 # ---------- 内置音色预设（本地仓库自带 presets/，缺失时从 GitHub 下载） ----------
 # 每项：(key, 标签, 文件名, 参考文本)。参考文本必须与音频实际内容一致。
 PRESET_DEFS = [
-    # ---- 普通话：自然真人录音（来自开源项目 F5-TTS / CosyVoice，MIT / Apache-2.0 许可）----
+    # ---- 普通话：自然真人录音（来自开源项目 F5-TTS / CosyVoice / IndexTTS，MIT / Apache-2.0 许可）----
     ("f5_zh", "普通话·自然女声", "f5_zh.wav", "对，这就是我万人敬仰的太乙真人。"),
     ("cosy_zh", "普通话·温柔女声", "cosy_zh.wav", "希望你以后能够做的比我还好呦。"),
-    # ---- 英语：自然真人录音（F5-TTS，男声）----
+    ("cn_shuoshu", "普通话·评书男声", "cn_shuoshu.wav", "今天咱们开一部新书，叫《赛博朋克二零七七》。"),
+    ("cn_nanyou", "普通话·男声", "cn_nanyou.wav", "当然，我是你前男友。"),
+    ("cn_dianying", "普通话·电影腔男声", "cn_dianying.wav", "翻译翻译，什么叫惊喜？"),
+    # ---- 英语：自然真人录音（F5-TTS / OpenVoice，MIT 许可）----
     ("f5_en", "英语·自然男声", "f5_en.wav", "Some call me nature, others call me mother nature."),
+    ("en_teacher", "英语·讲解男声", "en_teacher.wav", "Have you become an expert in deep learning algorithms?"),
+    ("en_kid", "英语·活泼少女声", "en_kid.wav", "Oh! Get him, Timmer's! You can't come to Timmer's Tea Party!"),
+    ("en_science", "英语·沉稳男声", "en_science.wav", "You know, there's this scientific method which I very much believe in, where something is true to the degree that it is, testably so."),
+    ("en_story", "英语·讲述男声", "en_story.wav", "When I was a wanted man, the resistance gave me a lot of help."),
 ]
 PRESET_BASE = "https://raw.githubusercontent.com/Evan78s/dots-tts-panel/main/presets"
 

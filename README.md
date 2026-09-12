@@ -29,7 +29,7 @@
 ## 功能
 
 - **全中文界面**：所有按钮、标签、语言选项都是中文（如「普通话」「粤语」「口音：东北话」等）
-- **选择音色（统一）**：内置 3 个**自然真人录音**音色（普通话 2 个 + 英语 1 个）和你的「我的音色」合并成**一个下拉**，点「试听」可预览
+- **选择音色（统一）**：内置 10 个**自然真人录音**音色（普通话 5 个 + 英语 5 个）和你的「我的音色」合并成**一个下拉**，点「试听」可预览
 - **➕ 添加我的音色（傻瓜三步）**：上传 3-10 秒人声 → 自动识别文字（可更正）→ 起名保存，以后直接在「选择音色」里选
 - **音色库持久化**：保存的音色存到你的 Google Drive（`dots_cache/voice_library/`），断连重开还在
 - **音色相似度**：滑块调节克隆相似程度（0.5–3.0，默认 1.5）
@@ -46,13 +46,20 @@
 
 **对标开源原文件：** dots.tts 是**零样本克隆模型**，官方（studio-dots-ai/dots.tts）**不提供任何内置音色**，HF 模型仓库里也没有示例人声（只有权重文件）。所以音色预设只能自己准备参考音频——必须用**干净的自然人声录音**（3-10 秒、单一人声、无背景噪音）。
 
-现在内置的 3 个音色取自开源项目的人声示例（**自然真人录音**，非机器合成）：
+现在内置的 10 个音色取自开源项目的人声示例（**自然真人录音**，非机器合成）：
 
 | 文件 | 来源 | 许可 |
 |---|---|---|
 | `f5_zh.wav` | [F5-TTS](https://github.com/SWivid/F5-TTS) 示例人声 | MIT |
 | `cosy_zh.wav` | [CosyVoice](https://github.com/FunAudioLLM/CosyVoice) 示例人声 | Apache-2.0 |
+| `cn_shuoshu.wav` | [IndexTTS](https://github.com/index-tts/index-tts) 示例音频 | 见 IndexTTS 仓库 |
+| `cn_nanyou.wav` | [IndexTTS](https://github.com/index-tts/index-tts) 示例音频 | 见 IndexTTS 仓库 |
+| `cn_dianying.wav` | [IndexTTS](https://github.com/index-tts/index-tts) 示例音频 | 见 IndexTTS 仓库 |
 | `f5_en.wav` | [F5-TTS](https://github.com/SWivid/F5-TTS) 示例人声 | MIT |
+| `en_teacher.wav` | [OpenVoice](https://github.com/myshell-ai/OpenVoice) 示例音频 | MIT |
+| `en_kid.wav` | [OpenVoice](https://github.com/myshell-ai/OpenVoice) 示例音频 | MIT |
+| `en_science.wav` | [OpenVoice](https://github.com/myshell-ai/OpenVoice) 示例音频 | MIT |
+| `en_story.wav` | [OpenVoice](https://github.com/myshell-ai/OpenVoice) 示例音频 | MIT |
 
 **想加更多音色（普通话 / 粤语等）：** 把任意干净人声 wav 放进 `presets/`，然后在 `panel_src.py` 的 `PRESET_DEFS` 里加一行 `(key, 标签, 文件名, 参考文字)`，重跑 `python3 gen_dots_tts_panel.py` 即可。**粤语音色**同理：找一个讲粤语的人声录音（3-10 秒）放进去就行。
 
@@ -81,7 +88,7 @@
 |---|---|
 | `dots_tts_panel.ipynb` | 主 notebook（音色预设运行时从本仓库 `presets/` 下载，代码轻量不卡顿） |
 | `panel_src.py` | 面板源码（Gradio Blocks，被 notebook 内嵌，本地可读改） |
-| `presets/*.wav` | 内置音色预设的参考音频（自然真人录音，来自 F5-TTS / CosyVoice） |
+| `presets/*.wav` | 内置音色预设的参考音频（自然真人录音，来自 F5-TTS / CosyVoice / IndexTTS / OpenVoice） |
 | `gen_dots_tts_panel.py` | 生成脚本：读取 `panel_src.py` + `presets/` 重新生成 notebook |
 
 > 重新生成 notebook：`python3 gen_dots_tts_panel.py`
