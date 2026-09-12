@@ -39,6 +39,12 @@ PRESET_DEFS = [
     ("en_kid", "英语·活泼少女声", "en_kid.wav", "Oh! Get him, Timmer's! You can't come to Timmer's Tea Party!"),
     ("en_science", "英语·沉稳男声", "en_science.wav", "You know, there's this scientific method which I very much believe in, where something is true to the degree that it is, testably so."),
     ("en_story", "英语·讲述男声", "en_story.wav", "When I was a wanted man, the resistance gave me a lot of help."),
+    # ---- 粤语：自然真人录音（FLEURS，CC-BY-4.0 许可）----
+    ("yue_f1", "粤语·温柔女声", "yue_f1.wav", "他在 1945 年加入該隊，並一直待到 1958 年。"),
+    ("yue_f2", "粤语·自然女声", "yue_f2.wav", "該主管到場時，公寓已發生爆炸。"),
+    ("yue_f3", "粤语·清亮女声", "yue_f3.wav", "首先，必須關閉燈具開關，或拔掉電源線。"),
+    ("yue_m1", "粤语·沉稳男声", "yue_m1.wav", "畢竟，領袖終究得對團隊的成敗負責。"),
+    ("yue_m2", "粤语·自然男声", "yue_m2.wav", "直升機救出了十二名船員，只有一人鼻骨骨折。"),
 ]
 PRESET_BASE = "https://raw.githubusercontent.com/Evan78s/dots-tts-panel/main/presets"
 

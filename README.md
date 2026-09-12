@@ -29,7 +29,7 @@
 ## 功能
 
 - **全中文界面**：所有按钮、标签、语言选项都是中文（如「普通话」「粤语」「口音：东北话」等）
-- **选择音色（统一）**：内置 10 个**自然真人录音**音色（普通话 5 个 + 英语 5 个）和你的「我的音色」合并成**一个下拉**，点「试听」可预览
+- **选择音色（统一）**：内置 15 个**自然真人录音**音色（普通话 5 个 + 英语 5 个 + 粤语 5 个）和你的「我的音色」合并成**一个下拉**，点「试听」可预览
 - **➕ 添加我的音色（傻瓜三步）**：上传 3-10 秒人声 → 自动识别文字（可更正）→ 起名保存，以后直接在「选择音色」里选
 - **音色库持久化**：保存的音色存到你的 Google Drive（`dots_cache/voice_library/`），断连重开还在
 - **音色相似度**：滑块调节克隆相似程度（0.5–3.0，默认 1.5）
@@ -46,7 +46,7 @@
 
 **对标开源原文件：** dots.tts 是**零样本克隆模型**，官方（studio-dots-ai/dots.tts）**不提供任何内置音色**，HF 模型仓库里也没有示例人声（只有权重文件）。所以音色预设只能自己准备参考音频——必须用**干净的自然人声录音**（3-10 秒、单一人声、无背景噪音）。
 
-现在内置的 10 个音色取自开源项目的人声示例（**自然真人录音**，非机器合成）：
+现在内置的 15 个音色取自开源项目的人声示例（**自然真人录音**，非机器合成）：
 
 | 文件 | 来源 | 许可 |
 |---|---|---|
@@ -60,6 +60,11 @@
 | `en_kid.wav` | [OpenVoice](https://github.com/myshell-ai/OpenVoice) 示例音频 | MIT |
 | `en_science.wav` | [OpenVoice](https://github.com/myshell-ai/OpenVoice) 示例音频 | MIT |
 | `en_story.wav` | [OpenVoice](https://github.com/myshell-ai/OpenVoice) 示例音频 | MIT |
+| `yue_f1.wav` | [FLEURS](https://huggingface.co/datasets/google/fleurs) 粤语人声 | CC-BY-4.0 |
+| `yue_f2.wav` | [FLEURS](https://huggingface.co/datasets/google/fleurs) 粤语人声 | CC-BY-4.0 |
+| `yue_f3.wav` | [FLEURS](https://huggingface.co/datasets/google/fleurs) 粤语人声 | CC-BY-4.0 |
+| `yue_m1.wav` | [FLEURS](https://huggingface.co/datasets/google/fleurs) 粤语人声 | CC-BY-4.0 |
+| `yue_m2.wav` | [FLEURS](https://huggingface.co/datasets/google/fleurs) 粤语人声 | CC-BY-4.0 |
 
 **想加更多音色（普通话 / 粤语等）：** 把任意干净人声 wav 放进 `presets/`，然后在 `panel_src.py` 的 `PRESET_DEFS` 里加一行 `(key, 标签, 文件名, 参考文字)`，重跑 `python3 gen_dots_tts_panel.py` 即可。**粤语音色**同理：找一个讲粤语的人声录音（3-10 秒）放进去就行。
 
@@ -88,7 +93,7 @@
 |---|---|
 | `dots_tts_panel.ipynb` | 主 notebook（音色预设运行时从本仓库 `presets/` 下载，代码轻量不卡顿） |
 | `panel_src.py` | 面板源码（Gradio Blocks，被 notebook 内嵌，本地可读改） |
-| `presets/*.wav` | 内置音色预设的参考音频（自然真人录音，来自 F5-TTS / CosyVoice / IndexTTS / OpenVoice） |
+| `presets/*.wav` | 内置音色预设的参考音频（自然真人录音，来自 F5-TTS / CosyVoice / IndexTTS / OpenVoice / FLEURS） |
 | `gen_dots_tts_panel.py` | 生成脚本：读取 `panel_src.py` + `presets/` 重新生成 notebook |
 
 > 重新生成 notebook：`python3 gen_dots_tts_panel.py`
@@ -97,8 +102,10 @@
 
 | 版本 | 说明 | Colab 链接 |
 |---|---|---|
-| **v2.2.0**（最新） | 修复「选粤语出普通话」（粤语改用官方标签 `口音:粤语`）+ 语言列表对齐官方 100+ 语言 + 音色预设换成自然真人录音（替换 macOS say 机器声）+ **傻瓜式加音色**（统一下拉/上传自动转写/一键保存）+ **修复音色库断连后消失**（固定存 Drive，不再跟模型缓存路径走） | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/main/dots_tts_panel.ipynb) |
-| **v2.1.0** | 环境打包缓存到 Drive（断连免重装）+ 模型复制本地 SSD（加载快）+ 启动前杀旧进程 + 智能等待地址（20 分钟）+ 代码块拆分 + 「🚀 一键启动」 | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/v2.0.0/dots_tts_panel.ipynb) |
+| **v2.4.0**（最新） | 新增 5 个粤语音色（3 女声 + 2 男声，取自 FLEURS 粤语真人录音）→ 内置音色扩至 15 个（普通话 5 + 英语 5 + 粤语 5） | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/main/dots_tts_panel.ipynb) |
+| **v2.3.0** | 新增 7 个自然真人音色（3 普通话男声 + 4 英语，取自 IndexTTS / OpenVoice）→ 内置音色扩至 10 个 | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/v2.3.0/dots_tts_panel.ipynb) |
+| **v2.2.0** | 修复「选粤语出普通话」（粤语改用官方标签 `口音:粤语`）+ 语言列表对齐官方 100+ 语言 + 音色预设换成自然真人录音（替换 macOS say 机器声）+ **傻瓜式加音色**（统一下拉/上传自动转写/一键保存）+ **修复音色库断连后消失**（固定存 Drive，不再跟模型缓存路径走） | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/v2.2.0/dots_tts_panel.ipynb) |
+| **v2.1.0** | 环境打包缓存到 Drive（断连免重装）+ 模型复制本地 SSD（加载快）+ 启动前杀旧进程 + 智能等待地址（20 分钟）+ 代码块拆分 + 「🚀 一键启动」 | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/v2.1.0/dots_tts_panel.ipynb) |
 | **v2.0.0** | 音色预设（4 个）+ 参考音频转写 + 音色库（持久化到 Drive）+ 音色相似度 + 高级设置（音色种子 / 生成质量 / 引导强度 / 文本规范化）+ 顶部 Banner 联系链接 | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/v2.0.0/dots_tts_panel.ipynb) |
 | **v1.0.0** | 基础版：多语言 TTS + 零样本声音克隆 + 公网面板 | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/v1.0.0/dots_tts_panel.ipynb) |
 
