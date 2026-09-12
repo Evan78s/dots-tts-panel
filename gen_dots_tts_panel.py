@@ -5,7 +5,7 @@
 #   2) 模型复制到本地 SSD（加载快，不用每次从 Drive 慢读 5GB）
 #   3) 启动前先杀旧进程 + 智能等待地址（20 分钟 + 检测进程退出）
 #   4) 代码块拆分：挂载 / 环境 / 模型 / 启动 + 一键启动
-import json, os, base64
+import json, os
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 # 兼容两种布局：平铺（仓库根）或 dots-tts-panel/ 子目录（本地开发）
@@ -22,9 +22,7 @@ def code(text):
             "source": [l + "\n" for l in text.strip("\n").split("\n")]}
 
 
-# ---- 读取面板脚本 ----
-panel_code = open(PANEL_SRC, encoding="utf-8").read()
-PANEL_CODE_B64 = base64.b64encode(panel_code.encode("utf-8")).decode("ascii")
+# ---- 面板源码已改为运行时从 GitHub 下载（notebook 不再内嵌超长代码块）----
 
 # ============================================================
 # 第 1 步：挂载 Drive + 定义路径
@@ -108,13 +106,15 @@ print("✅ 环境就绪（含 gradio / torch / dots.tts / faster-whisper）", fl
 # ============================================================
 # 第 3 步：准备模型（Drive -> 本地 SSD）+ 写面板代码
 # ============================================================
-STEP_PREP = '''# ---- 第 3 步：准备模型（复制到本地 SSD，加载快）+ 写面板代码 ----
-import os, subprocess
+STEP_PREP = '''# ---- 第 3 步：准备模型（复制到本地 SSD，加载快）+ 下载面板代码 ----
+import os, subprocess, urllib.request
 
-import base64
-panel_code = base64.b64decode("__PANEL_CODE_B64__").decode("utf-8")
-open("/content/panel.py", "w", encoding="utf-8").write(panel_code)
-print("✅ 面板代码已写入 /content/panel.py", flush=True)
+PANEL_URL = "https://raw.githubusercontent.com/Evan78s/dots-tts-panel/main/panel_src.py"
+try:
+    urllib.request.urlretrieve(PANEL_URL, "/content/panel.py")
+    print("✅ 面板代码已下载到 /content/panel.py", flush=True)
+except Exception as e:
+    raise SystemExit("❌ 下载面板代码失败（请检查网络后重跑本格）：" + str(e))
 
 drive_hub = os.path.join(CACHE, "hub") if DRIVE_OK else None
 local_hub = os.path.join(LOCAL_HF, "hub")
@@ -200,7 +200,7 @@ cells.append(md("""# dots.tts 语音合成面板（小红书 · Colab 版）
 
 **面板功能：**
 - ✅ 界面与语言选项**全中文**
-- ✅ **音色预设**：内置 3 个**自然真人录音**音色（普通话 × 2 + 英语 × 1），点「试听」可预览
+- ✅ **音色预设**：内置 3 个**自然真人录音**音色（普通话女声 × 2 + 英语男声 × 1），点「试听」可预览
 - ✅ **添加我的音色（傻瓜三步）**：上传人声 → 自动识别文字 → 起名保存，以后与内置音色在**同一个下拉**里选
 - ✅ **参考音频转写**：上传后自动识别文字，可手动更正（文字越准克隆越像）
 - ✅ **音色相似度** + 高级设置（音色种子 / 生成质量 / 引导强度 / 文本规范化）
@@ -237,13 +237,13 @@ cells.append(md("""## 第 2 步：准备环境（首次安装 / 之后秒恢复�
 
 cells.append(code(STEP_ENV))
 
-cells.append(md("""## 第 3 步：准备模型 + 写面板代码
+cells.append(md("""## 第 3 步：准备模型 + 下载面板代码
 
-把 Drive 上的模型缓存**复制到本地 SSD**（加载比直接从 Drive 读快数倍），并写入面板源码。
+把 Drive 上的模型缓存**复制到本地 SSD**（加载比直接从 Drive 读快数倍），并从 GitHub 下载最新面板源码（面板代码不再内嵌在本 notebook 里，更新音色 / 功能时无需重下 notebook）。
 
 > 首次运行时 Drive 还没有模型，会直接下载到 Drive。"""))
 
-cells.append(code(STEP_PREP.replace("__PANEL_CODE_B64__", PANEL_CODE_B64)))
+cells.append(code(STEP_PREP))
 
 cells.append(md("""## 第 4 步：启动面板 + 等待公网地址
 
@@ -255,7 +255,7 @@ cells.append(md("""## 🚀 一键启动（断连后 / 以后每次只跑这一�
 
 这一格 = 第 1 + 2 + 3 + 4 步的合体。**首次安装完成后，以后每次（含断连重开）只跑这一格就行**，约 2-4 分钟出地址。"""))
 
-cells.append(code(STEP_ALL.replace("__PANEL_CODE_B64__", PANEL_CODE_B64)))
+cells.append(code(STEP_ALL))
 
 cells.append(md("""## ❓ 常见问题
 

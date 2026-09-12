@@ -36,10 +36,10 @@ print("模型加载完成", flush=True)
 # 每项：(key, 标签, 文件名, 参考文本)。参考文本必须与音频实际内容一致。
 PRESET_DEFS = [
     # ---- 普通话：自然真人录音（来自开源项目 F5-TTS / CosyVoice，MIT / Apache-2.0 许可）----
-    ("f5_zh", "普通话·自然女声①", "f5_zh.wav", "对，这就是我万人敬仰的太乙真人。"),
-    ("cosy_zh", "普通话·自然女声②", "cosy_zh.wav", "希望你以后能够做的比我还好呦。"),
-    # ---- 英语：自然真人录音（F5-TTS）----
-    ("f5_en", "英语·自然女声", "f5_en.wav", "Some call me nature, others call me mother nature."),
+    ("f5_zh", "普通话·自然女声", "f5_zh.wav", "对，这就是我万人敬仰的太乙真人。"),
+    ("cosy_zh", "普通话·温柔女声", "cosy_zh.wav", "希望你以后能够做的比我还好呦。"),
+    # ---- 英语：自然真人录音（F5-TTS，男声）----
+    ("f5_en", "英语·自然男声", "f5_en.wav", "Some call me nature, others call me mother nature."),
 ]
 PRESET_BASE = "https://raw.githubusercontent.com/Evan78s/dots-tts-panel/main/presets"
 
