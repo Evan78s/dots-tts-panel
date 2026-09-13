@@ -15,7 +15,7 @@
 1. 点上面的「Open In Colab」按钮
 2. 菜单「**运行时 → 更改运行时类型 → 硬件加速器：GPU**」
 3. **首次使用**：从上到下跑「第 0 步 → 第 4 步」（约 5-8 分钟，会自动安装依赖 + 缓存到 Drive）
-4. **以后每次 / 断连重开**：只跑「**🚀 一键启动**」这一格（约 2-4 分钟，**免重装环境、模型秒加载**）
+4. **以后每次 / 断连重开**：**重跑全部**（Runtime → Run all / 全部运行，约 2-4 分钟，**免重装环境、模型秒加载**）
 5. 浏览器打开打印出来的 `https://xxx.gradio.live` 公网地址
 
 > 想复制到自己的 Colab：打开后点顶部「**复制到云端硬盘**」（File → Save a copy in Drive）。
@@ -80,11 +80,11 @@
 |---|---|
 | 首次很慢 | 正常，装环境 + 下 5GB 模型，约 5-8 分钟 |
 | 面板地址打不开 | 大陆用户需挂梯子（跟访问 Colab 同一个）；或换「全局模式」 |
-| 断连后还要重装吗 | 不用了，环境已缓存到 Drive，跑「🚀 一键启动」约 2-4 分钟 |
+| 断连后还要重装吗 | 不用了，环境已缓存到 Drive，重跑全部约 2-4 分钟 |
 | 等了很久没地址 | 最多等 20 分钟；若进程崩了会打印日志末尾，照着修 |
 | 转写报错 / 组件缺失 | 环境已内置 `faster-whisper`；仍报错可删 Drive 的 `py311.tar.gz` 重装一次 |
 | 保存的音色下次不见了 | 需挂载了 Google Drive（音色库存在 `dots_cache/voice_library/`） |
-| 想彻底重装 | 删除 Drive 的 `dots_cache/py311.tar.gz`，再跑「一键启动」会自动重装 |
+| 想彻底重装 | 删除 Drive 的 `dots_cache/py311.tar.gz`，再重跑全部会自动重装 |
 | 提示 GPU 不可用 | Colab 免费版配额动态，过几小时再试 |
 
 ## 目录说明
@@ -102,7 +102,8 @@
 
 | 版本 | 说明 | Colab 链接 |
 |---|---|---|
-| **v2.4.0**（最新） | 新增 5 个粤语音色（3 女声 + 2 男声，取自 FLEURS 粤语真人录音）→ 内置音色扩至 15 个（普通话 5 + 英语 5 + 粤语 5） | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/main/dots_tts_panel.ipynb) |
+| **v2.4.1**（最新） | 移除冗余的「🚀 一键启动」格（与第 1-4 步重复，断连重开直接「重跑全部」即可）+ 修正 notebook 内置音色数文案 | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/main/dots_tts_panel.ipynb) |
+| **v2.4.0** | 新增 5 个粤语音色（3 女声 + 2 男声，取自 FLEURS 粤语真人录音）→ 内置音色扩至 15 个（普通话 5 + 英语 5 + 粤语 5） | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/v2.4.0/dots_tts_panel.ipynb) |
 | **v2.3.0** | 新增 7 个自然真人音色（3 普通话男声 + 4 英语，取自 IndexTTS / OpenVoice）→ 内置音色扩至 10 个 | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/v2.3.0/dots_tts_panel.ipynb) |
 | **v2.2.0** | 修复「选粤语出普通话」（粤语改用官方标签 `口音:粤语`）+ 语言列表对齐官方 100+ 语言 + 音色预设换成自然真人录音（替换 macOS say 机器声）+ **傻瓜式加音色**（统一下拉/上传自动转写/一键保存）+ **修复音色库断连后消失**（固定存 Drive，不再跟模型缓存路径走） | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/v2.2.0/dots_tts_panel.ipynb) |
 | **v2.1.0** | 环境打包缓存到 Drive（断连免重装）+ 模型复制本地 SSD（加载快）+ 启动前杀旧进程 + 智能等待地址（20 分钟）+ 代码块拆分 + 「🚀 一键启动」 | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/v2.1.0/dots_tts_panel.ipynb) |
