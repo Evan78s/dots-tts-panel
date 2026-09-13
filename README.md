@@ -1,6 +1,6 @@
 # dots.tts 语音合成面板（小红书 · Colab 一键安装）
 
-一键在 Google Colab 启动**公网可访问**的语音合成面板。支持多语言合成、零样本声音克隆、中文方言口音。
+一键在 Google Colab 启动**公网可访问**的语音合成面板。支持 24 种官方语言合成、零样本声音克隆、粤语口音。
 
 模型：[dots.tts](https://github.com/studio-dots-ai/dots.tts)（小红书 HiLab 开源，Apache-2.0 许可）
 
@@ -28,15 +28,15 @@
 
 ## 功能
 
-- **全中文界面**：所有按钮、标签、语言选项都是中文（如「普通话」「粤语」「口音：东北话」等）
+- **全中文界面**：所有按钮、标签、语言选项都是中文（如「普通话」「粤语」「英语」「日语」等）
 - **选择音色（统一）**：内置 15 个**自然真人录音**音色（普通话 5 个 + 英语 5 个 + 粤语 5 个）和你的「我的音色」合并成**一个下拉**，点「试听」可预览
 - **➕ 添加我的音色（傻瓜三步）**：上传 3-10 秒人声 → 自动识别文字（可更正）→ 起名保存，以后直接在「选择音色」里选
 - **音色库持久化**：保存的音色存到你的 Google Drive（`dots_cache/voice_library/`），断连重开还在
 - **音色相似度**：滑块调节克隆相似程度（0.5–3.0，默认 1.5）
 - **高级设置**：音色种子（固定数字=每次同一个声音）/ 生成质量·采样步数 / 引导强度 / 文本规范化（数字、符号自动转口语读法）
-- 文本转语音：普通话 / 粤语 / 英语 / 日韩法德等 100+ 语言
+- 文本转语音：普通话 / 粤语 / 英语 / 日韩法德等 24 种官方语言（dots.tts 的 MiniMax 多语言基准覆盖的语言）
 - 零样本声音克隆：上传清晰人声即可模仿音色
-- 中文方言口音：北京官话 / 东北话 / 四川话 / 闽南话 / 吴语 / 粤语
+- 粤语方言口音：粤语（官方标签 `口音:粤语`）
 - **情绪/语气**：情绪来自参考音频的韵律——上传带目标情绪的人声（3-10 秒），再用「音色种子」换韵律/停顿
 - 模型与音色库缓存到你的 Google Drive，下次启动免重下 5GB
 
@@ -102,7 +102,8 @@
 
 | 版本 | 说明 | Colab 链接 |
 |---|---|---|
-| **v2.4.1**（最新） | 移除冗余的「🚀 一键启动」格（与第 1-4 步重复，断连重开直接「重跑全部」即可）+ 修正 notebook 内置音色数文案 | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/main/dots_tts_panel.ipynb) |
+| **v2.4.2**（最新） | 修正语言列表：对齐 dots.tts 官方 MiniMax 24 种语言（移除不支持的「北京官话/东北话」等假方言标签，修复切语言不生效）；试听改为直接返回音频文件（更快）+ 预设音色并行下载 | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/main/dots_tts_panel.ipynb) |
+| **v2.4.1** | 移除冗余的「🚀 一键启动」格（与第 1-4 步重复，断连重开直接「重跑全部」即可）+ 修正 notebook 内置音色数文案 | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/v2.4.1/dots_tts_panel.ipynb) |
 | **v2.4.0** | 新增 5 个粤语音色（3 女声 + 2 男声，取自 FLEURS 粤语真人录音）→ 内置音色扩至 15 个（普通话 5 + 英语 5 + 粤语 5） | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/v2.4.0/dots_tts_panel.ipynb) |
 | **v2.3.0** | 新增 7 个自然真人音色（3 普通话男声 + 4 英语，取自 IndexTTS / OpenVoice）→ 内置音色扩至 10 个 | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/v2.3.0/dots_tts_panel.ipynb) |
 | **v2.2.0** | 修复「选粤语出普通话」（粤语改用官方标签 `口音:粤语`）+ 语言列表对齐官方 100+ 语言 + 音色预设换成自然真人录音（替换 macOS say 机器声）+ **傻瓜式加音色**（统一下拉/上传自动转写/一键保存）+ **修复音色库断连后消失**（固定存 Drive，不再跟模型缓存路径走） | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/v2.2.0/dots_tts_panel.ipynb) |

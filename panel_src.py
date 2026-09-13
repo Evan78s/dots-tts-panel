@@ -56,15 +56,23 @@ for _key, _label, _file, _text in PRESET_DEFS:
 
 def _ensure_presets():
     import urllib.request
-    for _key, _label, _file, _text in PRESET_DEFS:
+    from concurrent.futures import ThreadPoolExecutor
+
+    def _dl(_file):
         _path = os.path.join(PRESET_DIR, _file)
         if os.path.exists(_path) and os.path.getsize(_path) > 1000:
-            continue
+            return True
         try:
             urllib.request.urlretrieve(PRESET_BASE + "/" + _file, _path)
-            print("下载预设音色：%s" % _label, flush=True)
+            return True
         except Exception as _e:
-            print("⚠️ 预设音色「%s」下载失败（仍可上传参考音频使用）：%s" % (_label, _e), flush=True)
+            print("⚠️ 预设音色「%s」下载失败（仍可上传参考音频使用）：%s" % (_file, _e), flush=True)
+            return False
+
+    _files = [_f for _, _, _f, _ in PRESET_DEFS]
+    with ThreadPoolExecutor(max_workers=6) as _ex:
+        _results = list(_ex.map(_dl, _files))
+    print("内置音色预设就绪：%d/%d" % (sum(_results), len(_files)), flush=True)
 
 _ensure_presets()
 print("内置音色预设：", list(PRESET_LABELS.values()), flush=True)
@@ -81,113 +89,31 @@ def build_voice_choices():
 # ---------- 语言（全部中文显示） ----------
 LANG_CHOICES = [
     ("自动检测", "auto_detect"),
+    # ---- dots.tts 官方支持语言（MiniMax 多语言基准的 24 种语言）----
     ("普通话", "ZH"),
     ("粤语", "口音:粤语"),
-    ("北京话", "口音:北京官话"),
-    ("东北话", "口音:东北话"),
-    ("四川话", "口音:四川话"),
-    ("闽南话", "口音:闽南话"),
-    ("吴语", "口音:吴语"),
     ("英语", "EN"),
     ("西班牙语", "ES"),
-    ("印地语", "HI"),
-    ("阿拉伯语", "AR"),
-    ("孟加拉语", "BN"),
+    ("法语", "FR"),
+    ("德语", "DE"),
+    ("意大利语", "IT"),
     ("葡萄牙语", "PT"),
     ("俄语", "RU"),
     ("日语", "JA"),
-    ("法语", "FR"),
-    ("德语", "DE"),
     ("韩语", "KO"),
-    ("意大利语", "IT"),
-    ("土耳其语", "TR"),
-    ("越南语", "VI"),
+    ("阿拉伯语", "AR"),
+    ("印地语", "HI"),
     ("印尼语", "ID"),
-    ("乌尔都语", "UR"),
-    ("波斯语", "FA"),
-    ("泰米尔语", "TA"),
-    ("泰卢固语", "TE"),
-    ("菲律宾语", "FIL"),
-    ("马来语", "MS"),
-    ("旁遮普语", "PA"),
-    ("马拉地语", "MR"),
-    ("古吉拉特语", "GU"),
-    ("马拉雅拉姆语", "ML"),
-    ("卡纳达语", "KN"),
-    ("波兰语", "PL"),
-    ("乌克兰语", "UK"),
-    ("荷兰语", "NL"),
     ("泰语", "TH"),
-    ("罗马尼亚语", "RO"),
-    ("斯瓦希里语", "SW"),
-    ("希伯来语", "HE"),
+    ("越南语", "VI"),
+    ("土耳其语", "TR"),
+    ("乌克兰语", "UK"),
+    ("波兰语", "PL"),
     ("捷克语", "CS"),
+    ("罗马尼亚语", "RO"),
     ("希腊语", "EL"),
-    ("匈牙利语", "HU"),
-    ("瑞典语", "SV"),
-    ("丹麦语", "DA"),
     ("芬兰语", "FI"),
-    ("书面挪威语", "NB"),
-    ("斯洛伐克语", "SK"),
-    ("斯洛文尼亚语", "SL"),
-    ("塞尔维亚语", "SR"),
-    ("波斯尼亚语", "BS"),
-    ("克罗地亚语", "HR"),
-    ("保加利亚语", "BG"),
-    ("马其顿语", "MK"),
-    ("立陶宛语", "LT"),
-    ("拉脱维亚语", "LV"),
-    ("爱沙尼亚语", "ET"),
-    ("冰岛语", "IS"),
-    ("爱尔兰语", "GA"),
-    ("威尔士语", "CY"),
-    ("加泰罗尼亚语", "CA"),
-    ("加利西亚语", "GL"),
-    ("奥克语", "OC"),
-    ("阿斯图里亚斯语", "AST"),
-    ("尼泊尔语", "NE"),
-    ("信德语", "SD"),
-    ("奥里亚语", "OR"),
-    ("阿萨姆语", "AS"),
-    ("普什图语", "PS"),
-    ("缅甸语", "MY"),
-    ("高棉语", "KM"),
-    ("老挝语", "LO"),
-    ("哈萨克语", "KK"),
-    ("乌兹别克语", "UZ"),
-    ("吉尔吉斯语", "KY"),
-    ("塔吉克语", "TG"),
-    ("阿塞拜疆语", "AZ"),
-    ("格鲁吉亚语", "KA"),
-    ("亚美尼亚语", "HY"),
-    ("白俄罗斯语", "BE"),
-    ("卢森堡语", "LB"),
-    ("马耳他语", "MT"),
-    ("毛利语", "MI"),
-    ("南非荷兰语", "AF"),
-    ("祖鲁语", "ZU"),
-    ("科萨语", "XH"),
-    ("约鲁巴语", "YO"),
-    ("豪萨语", "HA"),
-    ("伊博语", "IG"),
-    ("阿姆哈拉语", "AM"),
-    ("奥罗莫语", "OM"),
-    ("北索托语", "NSO"),
-    ("尼扬贾语", "NY"),
-    ("修纳语", "SN"),
-    ("索马里语", "SO"),
-    ("卢干达语", "LG"),
-    ("林加拉语", "LN"),
-    ("卢奥语", "LUO"),
-    ("坎巴语", "KAM"),
-    ("翁本杜语", "UMB"),
-    ("富拉语", "FF"),
-    ("沃洛夫语", "WO"),
-    ("中库尔德语", "CKB"),
-    ("宿务语", "CEB"),
-    ("佛得角克里奥尔语", "KEA"),
-    ("蒙古语", "MN"),
-    ("爪哇语", "JV"),
+    ("荷兰语", "NL"),
 ]
 
 # ---------- 音色库（持久化到 Drive） ----------
@@ -311,13 +237,7 @@ def preview_voice(voice_dd):
         return None, "未知音色。"
     if not os.path.exists(path):
         return None, "⚠️ 音频文件不存在：" + path
-    try:
-        sr, data = _read_audio(path)
-    except Exception as e:
-        return None, "⚠️ 无法读取音频：" + str(e)
-    if getattr(data, "size", 0) == 0:
-        return None, "⚠️ 音频内容为空。"
-    return (sr, data), "试听：%s" % label
+    return path, "试听：%s" % label
 
 # ---------- 合成 ----------
 def synth(voice_dd, ref_audio, ref_text, synth_text, synth_lang, speaker_scale,
@@ -376,7 +296,7 @@ DAOYAKE_URL = "https://www.daoyanke.cn"
 _BANNER_HTML = (
     '<div style="text-align:center;padding:20px 14px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:14px;margin-bottom:14px;">'
     '<h1 style="color:#fff;margin:0 0 6px;font-size:28px;">🎙️ dots.tts 语音合成面板</h1>'
-    '<p style="color:#eaeaff;margin:0 0 14px;font-size:15px;">输入文字 → 选音色（内置 / 我的音色 / 直接上传）→ 选语言 → 一键合成<br>支持声音克隆 · 100+ 语言 · 中文方言口音</p>'
+    '<p style="color:#eaeaff;margin:0 0 14px;font-size:15px;">输入文字 → 选音色（内置 / 我的音色 / 直接上传）→ 选语言 → 一键合成<br>支持声音克隆 · 24 种官方语言（普通话/粤语/英语等）</p>'
     '<p style="margin:0;">'
     '<a href="' + BILIBILI_URL + '" target="_blank" rel="noopener" style="display:inline-block;color:#fff;background:rgba(255,255,255,0.22);padding:5px 16px;border-radius:18px;text-decoration:none;margin:0 6px;font-weight:600;">📺 B站</a>'
     '<a href="' + DAOYAKE_URL + '" target="_blank" rel="noopener" style="display:inline-block;color:#fff;background:rgba(255,255,255,0.22);padding:5px 16px;border-radius:18px;text-decoration:none;margin:0 6px;font-weight:600;">🎬 导演课</a>'
@@ -395,7 +315,7 @@ with gr.Blocks(title="dots.tts 语音合成面板") as demo:
             with gr.Row():
                 preview_btn = gr.Button("试听选中音色")
                 delete_btn = gr.Button("删除选中的「我的音色」")
-            preview_audio = gr.Audio(label="试听")
+            preview_audio = gr.Audio(label="试听", type="filepath")
 
             gr.Markdown("## ➕ 添加我的音色（傻瓜三步）")
             gr.Markdown("上传一段 **3-10 秒的清晰人声**（无背景噪音、单一说话人），会自动识别文字；核对后起个名字保存，以后在「选择音色」里直接选。")
@@ -411,7 +331,7 @@ with gr.Blocks(title="dots.tts 语音合成面板") as demo:
         with gr.Column(scale=1):
             gr.Markdown("## ② 合成")
             synth_text = gr.Textbox(label="要合成的文字", lines=4, value="你好，欢迎使用 dots.tts 语音合成面板。")
-            synth_lang = gr.Dropdown(LANG_CHOICES, value="ZH", label="语言")
+            synth_lang = gr.Dropdown(LANG_CHOICES, value="auto_detect", label="语言")
             speaker_scale = gr.Slider(minimum=0.5, maximum=3.0, value=1.5, step=0.1,
                                       label="音色相似度（使用参考音色时生效，越高越像）")
             with gr.Accordion("⚙️ 高级设置（可选）", open=False):
