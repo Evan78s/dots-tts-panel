@@ -29,7 +29,7 @@
 ## 功能
 
 - **全中文界面**：所有按钮、标签、语言选项都是中文（如「普通话」「粤语」「英语」「日语」等）
-- **选择音色（统一）**：内置 15 个**自然真人录音**音色（普通话 5 个 + 英语 5 个 + 粤语 5 个）和你的「我的音色」合并成**一个下拉**，点「试听」可预览
+- **选择音色（统一）**：内置 20 个**自然真人录音**音色（普通话 5 个 + 英语 5 个 + 粤语 10 个，粤语 5男5女）和你的「我的音色」合并成**一个下拉**，点「试听」可预览
 - **➕ 添加我的音色（傻瓜三步）**：上传 3-10 秒人声 → 自动识别文字（可更正）→ 起名保存，以后直接在「选择音色」里选
 - **音色库持久化**：保存的音色存到你的 Google Drive（`dots_cache/voice_library/`），断连重开还在
 - **音色相似度**：滑块调节克隆相似程度（0.5–3.0，默认 1.5）
@@ -46,7 +46,7 @@
 
 **对标开源原文件：** dots.tts 是**零样本克隆模型**，官方（studio-dots-ai/dots.tts）**不提供任何内置音色**，HF 模型仓库里也没有示例人声（只有权重文件）。所以音色预设只能自己准备参考音频——必须用**干净的自然人声录音**（3-10 秒、单一人声、无背景噪音）。
 
-现在内置的 15 个音色取自开源项目的人声示例（**自然真人录音**，非机器合成）：
+现在内置的 20 个音色取自开源项目的人声示例（**自然真人录音**，非机器合成）：
 
 | 文件 | 来源 | 许可 |
 |---|---|---|
@@ -63,8 +63,13 @@
 | `yue_f1.wav` | [FLEURS](https://huggingface.co/datasets/google/fleurs) 粤语人声 | CC-BY-4.0 |
 | `yue_f2.wav` | [FLEURS](https://huggingface.co/datasets/google/fleurs) 粤语人声 | CC-BY-4.0 |
 | `yue_f3.wav` | [FLEURS](https://huggingface.co/datasets/google/fleurs) 粤语人声 | CC-BY-4.0 |
+| `yue_f4.wav` | [FLEURS](https://huggingface.co/datasets/google/fleurs) 粤语人声 | CC-BY-4.0 |
+| `yue_f5.wav` | [FLEURS](https://huggingface.co/datasets/google/fleurs) 粤语人声 | CC-BY-4.0 |
 | `yue_m1.wav` | [FLEURS](https://huggingface.co/datasets/google/fleurs) 粤语人声 | CC-BY-4.0 |
 | `yue_m2.wav` | [FLEURS](https://huggingface.co/datasets/google/fleurs) 粤语人声 | CC-BY-4.0 |
+| `yue_m3.wav` | [FLEURS](https://huggingface.co/datasets/google/fleurs) 粤语人声 | CC-BY-4.0 |
+| `yue_m4.wav` | [FLEURS](https://huggingface.co/datasets/google/fleurs) 粤语人声 | CC-BY-4.0 |
+| `yue_m5.wav` | [FLEURS](https://huggingface.co/datasets/google/fleurs) 粤语人声 | CC-BY-4.0 |
 
 **想加更多音色（普通话 / 粤语等）：** 把任意干净人声 wav 放进 `presets/`，然后在 `panel_src.py` 的 `PRESET_DEFS` 里加一行 `(key, 标签, 文件名, 参考文字)`，重跑 `python3 gen_dots_tts_panel.py` 即可。**粤语音色**同理：找一个讲粤语的人声录音（3-10 秒）放进去就行。
 
@@ -102,7 +107,8 @@
 
 | 版本 | 说明 | Colab 链接 |
 |---|---|---|
-| **v2.4.2**（最新） | 修正语言列表：对齐 dots.tts 官方 MiniMax 24 种语言（移除不支持的「北京官话/东北话」等假方言标签，修复切语言不生效）；试听改为直接返回音频文件（更快）+ 预设音色并行下载 | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/main/dots_tts_panel.ipynb) |
+| **v2.5.0**（最新） | 粤语音色扩至 10 个（5 男 5 女）：重新精选 FLEURS 粤语真人录音，按音高分层 + SNR 筛选出更干净、音色各异的参考音频 → 内置音色扩至 20 个（普通话 5 + 英语 5 + 粤语 10） | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/main/dots_tts_panel.ipynb) |
+| **v2.4.2** | 修正语言列表：对齐 dots.tts 官方 MiniMax 24 种语言（移除不支持的「北京官话/东北话」等假方言标签，修复切语言不生效）；试听改为直接返回音频文件（更快）+ 预设音色并行下载 | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/v2.4.2/dots_tts_panel.ipynb) |
 | **v2.4.1** | 移除冗余的「🚀 一键启动」格（与第 1-4 步重复，断连重开直接「重跑全部」即可）+ 修正 notebook 内置音色数文案 | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/v2.4.1/dots_tts_panel.ipynb) |
 | **v2.4.0** | 新增 5 个粤语音色（3 女声 + 2 男声，取自 FLEURS 粤语真人录音）→ 内置音色扩至 15 个（普通话 5 + 英语 5 + 粤语 5） | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/v2.4.0/dots_tts_panel.ipynb) |
 | **v2.3.0** | 新增 7 个自然真人音色（3 普通话男声 + 4 英语，取自 IndexTTS / OpenVoice）→ 内置音色扩至 10 个 | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/v2.3.0/dots_tts_panel.ipynb) |

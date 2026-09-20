@@ -47,12 +47,17 @@ PRESET_DEFS = [
     ("en_kid", "英语·活泼少女声", "en_kid.wav", "Oh! Get him, Timmer's! You can't come to Timmer's Tea Party!"),
     ("en_science", "英语·沉稳男声", "en_science.wav", "You know, there's this scientific method which I very much believe in, where something is true to the degree that it is, testably so."),
     ("en_story", "英语·讲述男声", "en_story.wav", "When I was a wanted man, the resistance gave me a lot of help."),
-    # ---- 粤语：自然真人录音（FLEURS，CC-BY-4.0 许可）----
-    ("yue_f1", "粤语·温柔女声", "yue_f1.wav", "他在 1945 年加入該隊，並一直待到 1958 年。"),
-    ("yue_f2", "粤语·自然女声", "yue_f2.wav", "該主管到場時，公寓已發生爆炸。"),
-    ("yue_f3", "粤语·清亮女声", "yue_f3.wav", "首先，必須關閉燈具開關，或拔掉電源線。"),
-    ("yue_m1", "粤语·沉稳男声", "yue_m1.wav", "畢竟，領袖終究得對團隊的成敗負責。"),
-    ("yue_m2", "粤语·自然男声", "yue_m2.wav", "直升機救出了十二名船員，只有一人鼻骨骨折。"),
+    # ---- 粤语：自然真人录音（FLEURS，CC-BY-4.0 许可，5 男 5 女）----
+    ("yue_f1", "粤语·温柔女声", "yue_f1.wav", "一支調查小組奉命成立。"),
+    ("yue_f2", "粤语·自然女声", "yue_f2.wav", "憲法修正案之提案已在 2011 年由兩院通過。"),
+    ("yue_f3", "粤语·清亮女声", "yue_f3.wav", "自此之後，中國的經濟規模成長了 90 倍。"),
+    ("yue_f4", "粤语·明亮女声", "yue_f4.wav", "該主管到場時，公寓已發生爆炸。"),
+    ("yue_f5", "粤语·清脆女声", "yue_f5.wav", "當時，從該地區撤離了將近 100 位居民。"),
+    ("yue_m1", "粤语·低沉男声", "yue_m1.wav", "在許多淨化水的方式中，有些可以更有效地處理特定威脅。"),
+    ("yue_m2", "粤语·沉稳男声", "yue_m2.wav", "細胞一詞來自拉丁文的 cella，意指小空間。"),
+    ("yue_m3", "粤语·自然男声", "yue_m3.wav", "中國的 GDP 在 20 年之內就可能超過美國。"),
+    ("yue_m4", "粤语·清朗男声", "yue_m4.wav", "原子核由中子和質子兩種粒子組成。"),
+    ("yue_m5", "粤语·明亮男声", "yue_m5.wav", "此信必須經厄瓜多外交部批准，並符合相關要求。"),
 ]
 PRESET_BASE = "https://raw.githubusercontent.com/Evan78s/dots-tts-panel/main/presets"
 
