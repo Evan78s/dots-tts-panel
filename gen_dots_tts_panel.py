@@ -107,7 +107,7 @@ print("✅ 环境就绪（含 gradio / torch / dots.tts / faster-whisper）", fl
 # 第 3 步：准备模型（Drive -> 本地 SSD）+ 写面板代码
 # ============================================================
 STEP_PREP = '''# ---- 第 3 步：准备模型（复制到本地 SSD，加载快）+ 下载面板代码 ----
-import os, subprocess, urllib.request
+import os, subprocess, urllib.request, json, glob, shutil
 
 PANEL_URL = "https://raw.githubusercontent.com/Evan78s/dots-tts-panel/main/panel_src.py"
 try:
@@ -118,16 +118,44 @@ except Exception as e:
 
 drive_hub = os.path.join(CACHE, "hub") if DRIVE_OK else None
 local_hub = os.path.join(LOCAL_HF, "hub")
+SENTINEL = os.path.join(LOCAL_HF, ".hub_copied_ok")
+
+def _model_cache_ok(hub):
+    """检查 dots.tts 模型的 tokenizer.json 是否完整可解析（= 缓存没损坏）。"""
+    if not hub:
+        return False
+    pat = os.path.join(hub, "models--dots-studio--dots.tts-soar", "snapshots", "*", "tokenizer.json")
+    for p in glob.glob(pat):
+        try:
+            with open(p, encoding="utf-8") as f:
+                json.load(f)
+            return True
+        except Exception:
+            return False
+    return False
 
 if drive_hub and os.path.isdir(drive_hub):
-    if not os.path.isdir(local_hub):
-        print("📦 复制模型缓存到本地 SSD（含 blobs 软链，约 1-3 分钟，之后加载飞快）...", flush=True)
+    # 只有上次「完整复制」过（有标记 + 校验通过）才跳过；否则重新复制，避免复用残缺缓存
+    if os.path.exists(SENTINEL) and _model_cache_ok(local_hub):
+        print("✅ 模型已在本地 SSD（上次已完整复制，跳过）", flush=True)
+        HF_HOME_USE = LOCAL_HF
+    else:
+        print("📦 复制模型缓存到本地 SSD（含 blobs 软链，约 1-3 分钟）...", flush=True)
+        if os.path.isdir(local_hub):
+            shutil.rmtree(local_hub, ignore_errors=True)
         os.makedirs(LOCAL_HF, exist_ok=True)
         subprocess.run(["cp", "-a", drive_hub, local_hub], check=True)
-        print("✅ 模型已就位本地 SSD", flush=True)
-    else:
-        print("✅ 模型已在本地 SSD（本次会话已复制过，跳过）", flush=True)
-    HF_HOME_USE = LOCAL_HF
+        if _model_cache_ok(local_hub):
+            open(SENTINEL, "w").write("ok")
+            print("✅ 模型已就位本地 SSD", flush=True)
+            HF_HOME_USE = LOCAL_HF
+        else:
+            # Drive 缓存本身损坏 → 删掉后重新下载到 Drive（避免反复复制同一个坏缓存）
+            print("⚠️ Drive 模型缓存不完整（tokenizer.json 损坏），自动重新下载...", flush=True)
+            shutil.rmtree(local_hub, ignore_errors=True)
+            for _d in ["models--dots-studio--dots.tts-soar"]:
+                shutil.rmtree(os.path.join(drive_hub, _d), ignore_errors=True)
+            HF_HOME_USE = CACHE if DRIVE_OK else None
 else:
     # 首次运行：还没有 Drive 缓存，模型将直接下载到 Drive
     HF_HOME_USE = CACHE if DRIVE_OK else None
@@ -236,7 +264,7 @@ cells.append(md("""## 第 3 步：准备模型 + 下载面板代码
 
 把 Drive 上的模型缓存**复制到本地 SSD**（加载比直接从 Drive 读快数倍），并从 GitHub 下载最新面板源码（面板代码不再内嵌在本 notebook 里，更新音色 / 功能时无需重下 notebook）。
 
-> 首次运行时 Drive 还没有模型，会直接下载到 Drive。"""))
+> 首次运行时 Drive 还没有模型，会直接下载到 Drive；若缓存损坏（下载/复制中断），也会自动重新下载或重新复制（自愈）。"""))
 
 cells.append(code(STEP_PREP))
 

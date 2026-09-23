@@ -87,6 +87,7 @@
 | 面板地址打不开 | 大陆用户需挂梯子（跟访问 Colab 同一个）；或换「全局模式」 |
 | 断连后还要重装吗 | 不用了，环境已缓存到 Drive，重跑全部约 2-4 分钟 |
 | 等了很久没地址 | 最多等 20 分钟；若进程崩了会打印日志末尾，照着修 |
+| 第 4 步报 `tokenizer.json` / JSON 解析错误 | 模型缓存损坏（下载/复制中断）。删 `/content/dots_hf_cache/hub` 和 Drive 的 `dots_cache/hub` 后重跑；新版已能自愈 |
 | 转写报错 / 组件缺失 | 环境已内置 `faster-whisper`；仍报错可删 Drive 的 `py311.tar.gz` 重装一次 |
 | 保存的音色下次不见了 | 需挂载了 Google Drive（音色库存在 `dots_cache/voice_library/`） |
 | 想彻底重装 | 删除 Drive 的 `dots_cache/py311.tar.gz`，再重跑全部会自动重装 |
@@ -107,7 +108,8 @@
 
 | 版本 | 说明 | Colab 链接 |
 |---|---|---|
-| **v2.5.0**（最新） | 粤语音色扩至 10 个（5 男 5 女）：重新精选 FLEURS 粤语真人录音，按音高分层 + SNR 筛选出更干净、音色各异的参考音频 → 内置音色扩至 20 个（普通话 5 + 英语 5 + 粤语 10） | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/main/dots_tts_panel.ipynb) |
+| **v2.5.1**（最新） | 修复第 4 步模型加载报 `tokenizer.json` JSON 解析错误：模型缓存复制改为「完成标记 + tokenizer 完整性校验」，下载/复制中断会自动重新下载或重新复制（自愈） | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/main/dots_tts_panel.ipynb) |
+| **v2.5.0** | 粤语音色扩至 10 个（5 男 5 女）：重新精选 FLEURS 粤语真人录音，按音高分层 + SNR 筛选出更干净、音色各异的参考音频 → 内置音色扩至 20 个（普通话 5 + 英语 5 + 粤语 10） | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/v2.5.0/dots_tts_panel.ipynb) |
 | **v2.4.2** | 修正语言列表：对齐 dots.tts 官方 MiniMax 24 种语言（移除不支持的「北京官话/东北话」等假方言标签，修复切语言不生效）；试听改为直接返回音频文件（更快）+ 预设音色并行下载 | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/v2.4.2/dots_tts_panel.ipynb) |
 | **v2.4.1** | 移除冗余的「🚀 一键启动」格（与第 1-4 步重复，断连重开直接「重跑全部」即可）+ 修正 notebook 内置音色数文案 | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/v2.4.1/dots_tts_panel.ipynb) |
 | **v2.4.0** | 新增 5 个粤语音色（3 女声 + 2 男声，取自 FLEURS 粤语真人录音）→ 内置音色扩至 15 个（普通话 5 + 英语 5 + 粤语 5） | [打开](https://colab.research.google.com/github/Evan78s/dots-tts-panel/blob/v2.4.0/dots_tts_panel.ipynb) |
